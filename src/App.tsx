@@ -5,33 +5,34 @@ import { Appointments } from './components/Appointments';
 import { Patients } from './components/Patients';
 import { Budgets } from './components/Budgets';
 import { Footer } from './components/Footer';
+import { IntroScreen } from './components/IntroScreen';
+import { Login } from './components/Login';
+import { Registro } from './components/Registro';
 import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS } from './data/mockData';
 import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus } from './types';
-import { Calendar, Users, FileText, CheckCircle, Activity, Sparkles } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
+
+type AppPhase = 'intro' | 'login' | 'registro' | 'app';
 
 export const App: React.FC = () => {
+  // ── TODOS los hooks siempre al tope (regla de React) ──
+  const [appPhase, setAppPhase] = useState<AppPhase>('intro');
+  const [usuarioActivo, setUsuarioActivo] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTab>('odontogram');
-  
-  // App Global State
   const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
-  
   const [selectedPatientId, setSelectedPatientId] = useState<string>(INITIAL_PATIENTS[0].id);
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || patients[0];
 
-  // Odontogram findings update handler
+  // Handlers
   const handleUpdateOdontogramFindings = (patientId: string, newFindings: ToothFinding[]) => {
-    setPatients(prev => prev.map(p => {
-      if (p.id === patientId) {
-        return { ...p, odontogramFindings: newFindings };
-      }
-      return p;
-    }));
+    setPatients(prev => prev.map(p =>
+      p.id === patientId ? { ...p, odontogramFindings: newFindings } : p
+    ));
   };
 
-  // Appointment Handlers
   const handleAddAppointment = (newApp: Appointment) => {
     setAppointments([newApp, ...appointments]);
   };
@@ -40,12 +41,10 @@ export const App: React.FC = () => {
     setAppointments(prev => prev.map(app => app.id === id ? { ...app, status } : app));
   };
 
-  // Patient Handlers
   const handleAddPatient = (newPatient: Patient) => {
     setPatients([newPatient, ...patients]);
   };
 
-  // Budget Handlers
   const handleAddBudget = (newBudget: Budget) => {
     setBudgets([newBudget, ...budgets]);
   };
@@ -53,8 +52,7 @@ export const App: React.FC = () => {
   const handleUpdatePayment = (budgetId: string, addedPayment: number) => {
     setBudgets(prev => prev.map(b => {
       if (b.id === budgetId) {
-        const newPaid = b.paidAmount + addedPayment;
-        return { ...b, paidAmount: newPaid };
+        return { ...b, paidAmount: b.paidAmount + addedPayment };
       }
       return b;
     }));
@@ -63,19 +61,30 @@ export const App: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === todayStr);
 
+  // ── Flujo de fases (después de todos los hooks) ──
+  if (appPhase === 'intro') {
+    return <IntroScreen onFinish={() => setAppPhase('login')} />;
+  }
+
+  if (appPhase === 'login') {
+    return <Login onLogin={(role) => { setUsuarioActivo(role); setAppPhase('registro'); }} />;
+  }
+
+  if (appPhase === 'registro') {
+    return <Registro usuarioLogin={usuarioActivo} onDone={() => setAppPhase('app')} />;
+  }
+
+  // ── App principal ──
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-teal-500 selection:text-white">
-      {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         todayAppointmentsCount={todayAppointments.length}
       />
 
-      {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
-        
-        {/* Quick Patient Switcher Bar (Visible on Odontogram tab) */}
+
         {activeTab === 'odontogram' && (
           <div className="mb-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
@@ -90,7 +99,6 @@ export const App: React.FC = () => {
                 ))}
               </select>
             </div>
-
             <div className="flex items-center space-x-4 text-xs font-semibold text-slate-500">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-teal-600" /> {patients.length} Pacientes
@@ -102,12 +110,8 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Dynamic Tab Views */}
         {activeTab === 'odontogram' && (
-          <Odontogram
-            patient={selectedPatient}
-            onUpdateFindings={handleUpdateOdontogramFindings}
-          />
+          <Odontogram patient={selectedPatient} onUpdateFindings={handleUpdateOdontogramFindings} />
         )}
 
         {activeTab === 'appointments' && (
@@ -143,7 +147,6 @@ export const App: React.FC = () => {
 
       </main>
 
-      {/* AURA Startup Copyright Footer */}
       <Footer />
     </div>
   );

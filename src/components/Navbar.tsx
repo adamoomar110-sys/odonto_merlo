@@ -71,11 +71,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* User profile badge */}
           <div className="hidden md:flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
             <div className="w-8 h-8 rounded-full bg-teal-500 text-white font-bold text-xs flex items-center justify-center">
-              RM
+               AM
             </div>
             <div className="text-left text-xs">
-              <span className="block font-bold text-slate-800">Dr. Rodrigo Merlo</span>
-              <span className="block text-[10px] text-teal-600 font-semibold">Odontólogo Director</span>
+              <span className="block font-bold text-slate-800">Dra. Amalia Merlo</span>
+              <span className="block text-[10px] text-teal-600 font-semibold">Odontóloga Directora</span>
             </div>
           </div>
 
