@@ -1,0 +1,481 @@
+import React, { useState } from 'react';
+import { Patient, ToothFinding, ToothSurface, ConditionType } from '../types';
+import { CONDITION_METAS } from '../data/mockData';
+import { AlertCircle, CheckCircle2, FileText, Printer, Trash2, Plus, Info, Sparkles } from 'lucide-react';
+
+interface OdontogramProps {
+  patient: Patient;
+  onUpdateFindings: (patientId: string, newFindings: ToothFinding[]) => void;
+}
+
+// FDI Quadrants Adult
+const UPPER_RIGHT = [18, 17, 16, 15, 14, 13, 12, 11];
+const UPPER_LEFT  = [21, 22, 23, 24, 25, 26, 27, 28];
+const LOWER_RIGHT = [48, 47, 46, 45, 44, 43, 42, 41];
+const LOWER_LEFT  = [31, 32, 33, 34, 35, 36, 37, 38];
+
+// FDI Deciduous (Primary teeth)
+const PRIMARY_UPPER_RIGHT = [55, 54, 53, 52, 51];
+const PRIMARY_UPPER_LEFT  = [61, 62, 63, 64, 65];
+const PRIMARY_LOWER_RIGHT = [85, 84, 83, 82, 81];
+const PRIMARY_LOWER_LEFT  = [71, 72, 73, 74, 75];
+
+export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFindings }) => {
+  const [selectedCondition, setSelectedCondition] = useState<ConditionType>('caries');
+  const [selectedTooth, setSelectedTooth] = useState<number | null>(16);
+  const [isPrimaryTeethView, setIsPrimaryTeethView] = useState<boolean>(false);
+  const [notesInput, setNotesInput] = useState<string>('');
+
+  const findings = patient.odontogramFindings || [];
+
+  // Helper to find condition for a tooth surface
+  const getFindingForSurface = (toothNum: number, surface: ToothSurface) => {
+    return findings.find(f => f.toothNumber === toothNum && f.surface === surface);
+  };
+
+  // Helper to find tooth-level condition (ausente, endodoncia, corona)
+  const getToothLevelFinding = (toothNum: number) => {
+    return findings.find(f => f.toothNumber === toothNum && (f.surface === 'pieza' || f.condition === 'ausente' || f.condition === 'corona' || f.condition === 'endodoncia'));
+  };
+
+  const handleSurfaceClick = (toothNum: number, surface: ToothSurface, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTooth(toothNum);
+
+    // If selecting 'ausente', 'corona', or 'endodoncia', apply to whole tooth
+    let targetSurface: ToothSurface = surface;
+    if (['ausente', 'corona', 'endodoncia'].includes(selectedCondition)) {
+      targetSurface = 'pieza';
+    }
+
+    // Filter out existing finding for this tooth and surface
+    const existingIndex = findings.findIndex(f => f.toothNumber === toothNum && f.surface === targetSurface);
+    
+    let updated: ToothFinding[];
+    if (selectedCondition === 'sano') {
+      // Remove finding if sano
+      updated = findings.filter(f => !(f.toothNumber === toothNum && (f.surface === targetSurface || targetSurface === 'pieza')));
+    } else {
+      const newFinding: ToothFinding = {
+        id: 'find-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        toothNumber: toothNum,
+        surface: targetSurface,
+        condition: selectedCondition,
+        date: new Date().toISOString().split('T')[0],
+        notes: notesInput || CONDITION_METAS[selectedCondition].label
+      };
+
+      if (existingIndex >= 0) {
+        updated = [...findings];
+        updated[existingIndex] = newFinding;
+      } else {
+        updated = [...findings, newFinding];
+      }
+    }
+
+    onUpdateFindings(patient.id, updated);
+  };
+
+  const handleRemoveFinding = (findingId: string) => {
+    const updated = findings.filter(f => f.id !== findingId);
+    onUpdateFindings(patient.id, updated);
+  };
+
+  // Surface polygon color finder
+  const getSurfaceColor = (toothNum: number, surface: ToothSurface) => {
+    const finding = getFindingForSurface(toothNum, surface);
+    if (!finding) return '#ffffff';
+    return CONDITION_METAS[finding.condition]?.color || '#ffffff';
+  };
+
+  // Render individual Tooth SVG component
+  const renderToothSVG = (toothNum: number) => {
+    const toothLevel = getToothLevelFinding(toothNum);
+    const isSelected = selectedTooth === toothNum;
+    const isAusente = toothLevel?.condition === 'ausente';
+    const isCorona = toothLevel?.condition === 'corona';
+    const isEndodoncia = toothLevel?.condition === 'endodoncia';
+
+    return (
+      <div 
+        key={toothNum} 
+        onClick={() => setSelectedTooth(toothNum)}
+        className={`relative flex flex-col items-center p-1.5 rounded-xl transition-all cursor-pointer select-none ${
+          isSelected 
+            ? 'bg-teal-50 ring-2 ring-teal-500 shadow-md scale-105 z-10' 
+            : 'hover:bg-slate-100 hover:scale-102'
+        }`}
+      >
+        <span className="text-xs font-extrabold text-slate-600 mb-1 tracking-wider">
+          {toothNum}
+        </span>
+
+        {/* Tooth SVG Diagram (5 interactive surfaces) */}
+        <div className="relative w-11 h-11">
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm">
+            {/* Background Tooth Box */}
+            <rect x="2" y="2" width="96" height="96" rx="12" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="3" />
+
+            {/* Surface 1: TOP (Vestibular / Lingual) */}
+            <polygon 
+              points="2,2 98,2 75,25 25,25" 
+              fill={getSurfaceColor(toothNum, 'vestibular')} 
+              stroke="#64748b" 
+              strokeWidth="2.5"
+              className="hover:opacity-80 transition-opacity"
+              onClick={(e) => handleSurfaceClick(toothNum, 'vestibular', e)}
+            >
+              <title>Diente {toothNum} - Vestibular</title>
+            </polygon>
+
+            {/* Surface 2: BOTTOM (Lingual / Palatina) */}
+            <polygon 
+              points="25,75 75,75 98,98 2,98" 
+              fill={getSurfaceColor(toothNum, 'lingual')} 
+              stroke="#64748b" 
+              strokeWidth="2.5"
+              className="hover:opacity-80 transition-opacity"
+              onClick={(e) => handleSurfaceClick(toothNum, 'lingual', e)}
+            >
+              <title>Diente {toothNum} - Lingual / Palatina</title>
+            </polygon>
+
+            {/* Surface 3: LEFT (Mesial / Distal) */}
+            <polygon 
+              points="2,2 25,25 25,75 2,98" 
+              fill={getSurfaceColor(toothNum, 'mesial')} 
+              stroke="#64748b" 
+              strokeWidth="2.5"
+              className="hover:opacity-80 transition-opacity"
+              onClick={(e) => handleSurfaceClick(toothNum, 'mesial', e)}
+            >
+              <title>Diente {toothNum} - Mesial</title>
+            </polygon>
+
+            {/* Surface 4: RIGHT (Distal / Mesial) */}
+            <polygon 
+              points="98,2 98,98 75,75 75,25" 
+              fill={getSurfaceColor(toothNum, 'distal')} 
+              stroke="#64748b" 
+              strokeWidth="2.5"
+              className="hover:opacity-80 transition-opacity"
+              onClick={(e) => handleSurfaceClick(toothNum, 'distal', e)}
+            >
+              <title>Diente {toothNum} - Distal</title>
+            </polygon>
+
+            {/* Surface 5: CENTER (Oclusal / Incisal) */}
+            <polygon 
+              points="25,25 75,25 75,75 25,75" 
+              fill={getSurfaceColor(toothNum, 'oclusal')} 
+              stroke="#64748b" 
+              strokeWidth="2.5"
+              className="hover:opacity-80 transition-opacity"
+              onClick={(e) => handleSurfaceClick(toothNum, 'oclusal', e)}
+            >
+              <title>Diente {toothNum} - Oclusal / Incisal</title>
+            </polygon>
+
+            {/* Overlay: Corona (Golden Ring) */}
+            {isCorona && (
+              <rect x="6" y="6" width="88" height="88" rx="8" fill="none" stroke="#f59e0b" strokeWidth="7" strokeDasharray="6 3" />
+            )}
+
+            {/* Overlay: Endodoncia (Vertical Line through root) */}
+            {isEndodoncia && (
+              <g>
+                <line x1="50" y1="0" x2="50" y2="100" stroke="#8b5cf6" strokeWidth="9" />
+                <circle cx="50" cy="50" r="10" fill="#8b5cf6" />
+              </g>
+            )}
+
+            {/* Overlay: Ausente / Exodoncia (Big Red/Black Cross) */}
+            {isAusente && (
+              <g>
+                <line x1="10" y1="10" x2="90" y2="90" stroke="#dc2626" strokeWidth="10" strokeLinecap="round" />
+                <line x1="90" y1="10" x2="10" y2="90" stroke="#dc2626" strokeWidth="10" strokeLinecap="round" />
+              </g>
+            )}
+          </svg>
+        </div>
+
+        {/* Small badge if findings exist */}
+        {findings.some(f => f.toothNumber === toothNum) && (
+          <span className="mt-1 w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+        )}
+      </div>
+    );
+  };
+
+  const selectedToothFindings = findings.filter(f => f.toothNumber === selectedTooth);
+
+  return (
+    <div className="space-y-6">
+      {/* Header & Patient Banner */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-teal-500 text-white flex items-center justify-center font-bold text-xl shadow-md">
+            🦷
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              Odontograma Clínico FDI: <span className="text-teal-600">{patient.name}</span>
+            </h2>
+            <p className="text-sm text-slate-500">
+              DNI: <span className="font-semibold text-slate-700">{patient.dni}</span> | Obra Social: <span className="font-semibold text-slate-700">{patient.healthInsurance} ({patient.insuranceNumber || 'N/A'})</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsPrimaryTeethView(!isPrimaryTeethView)}
+            className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 transition flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-teal-600" />
+            {isPrimaryTeethView ? 'Ver Dientes Adultos (32)' : 'Ver Dientes Temporales (20)'}
+          </button>
+
+          <button 
+            onClick={() => window.print()}
+            className="px-4 py-2 text-sm font-semibold rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-sm transition flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimir Odontograma
+          </button>
+        </div>
+      </div>
+
+      {/* Selector de Condición Clínico (Paleta de la facultad) */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+          <Info className="w-4 h-4 text-teal-600" />
+          Herramienta de Diagnóstico Clínico (Haz clic en una condición y luego en la superficie dental):
+        </h3>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {Object.values(CONDITION_METAS).map((cond) => {
+            const isActive = selectedCondition === cond.id;
+            return (
+              <button
+                key={cond.id}
+                onClick={() => setSelectedCondition(cond.id as ConditionType)}
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  isActive 
+                    ? 'border-teal-500 bg-teal-50/50 shadow-md ring-2 ring-teal-400 font-semibold' 
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="w-4 h-4 rounded-full border border-slate-400 shadow-inner" style={{ backgroundColor: cond.color }}></span>
+                  {cond.symbol && <span className="text-xs">{cond.symbol}</span>}
+                </div>
+                <span className="text-xs font-bold text-slate-800 line-clamp-1">{cond.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Odontograma Visual (Cuadrantes FDI) */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-x-auto">
+        <div className="min-w-[720px] space-y-6">
+          
+          {/* Superior Arch */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+            <div className="text-center text-xs font-bold uppercase tracking-wider text-teal-700 mb-3 bg-teal-100/60 py-1 rounded-lg">
+              MAXILAR SUPERIOR (Cuadrante 1 y Cuadrante 2)
+            </div>
+
+            {!isPrimaryTeethView ? (
+              <div className="grid grid-cols-16 gap-1 justify-center items-center">
+                {/* Upper Right 18..11 */}
+                <div className="col-span-8 flex justify-end gap-1 border-r-2 border-dashed border-teal-300 pr-3">
+                  {UPPER_RIGHT.map(num => renderToothSVG(num))}
+                </div>
+                {/* Upper Left 21..28 */}
+                <div className="col-span-8 flex justify-start gap-1 pl-3">
+                  {UPPER_LEFT.map(num => renderToothSVG(num))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center gap-1">
+                <div className="flex gap-1 border-r-2 border-dashed border-teal-300 pr-3">
+                  {PRIMARY_UPPER_RIGHT.map(num => renderToothSVG(num))}
+                </div>
+                <div className="flex gap-1 pl-3">
+                  {PRIMARY_UPPER_LEFT.map(num => renderToothSVG(num))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Line separator representing occlusal plane */}
+          <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-400">
+            <div className="h-px bg-slate-300 flex-1" />
+            <span className="px-3 py-0.5 bg-slate-200 rounded-full text-slate-600">LÍNEA MEDIA / PLANO OCLUSAL</span>
+            <div className="h-px bg-slate-300 flex-1" />
+          </div>
+
+          {/* Inferior Arch */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
+            {!isPrimaryTeethView ? (
+              <div className="grid grid-cols-16 gap-1 justify-center items-center">
+                {/* Lower Right 48..41 */}
+                <div className="col-span-8 flex justify-end gap-1 border-r-2 border-dashed border-teal-300 pr-3">
+                  {LOWER_RIGHT.map(num => renderToothSVG(num))}
+                </div>
+                {/* Lower Left 31..38 */}
+                <div className="col-span-8 flex justify-start gap-1 pl-3">
+                  {LOWER_LEFT.map(num => renderToothSVG(num))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center gap-1">
+                <div className="flex gap-1 border-r-2 border-dashed border-teal-300 pr-3">
+                  {PRIMARY_LOWER_RIGHT.map(num => renderToothSVG(num))}
+                </div>
+                <div className="flex gap-1 pl-3">
+                  {PRIMARY_LOWER_LEFT.map(num => renderToothSVG(num))}
+                </div>
+              </div>
+            )}
+
+            <div className="text-center text-xs font-bold uppercase tracking-wider text-teal-700 mt-3 bg-teal-100/60 py-1 rounded-lg">
+              MAXILAR INFERIOR (Cuadrante 4 y Cuadrante 3)
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Dynamic Detail Panel for Selected Tooth & Complete Findings List */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Selected Tooth Quick Inspector */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 lg:col-span-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
+                Detalle Pieza Dental: <span className="text-2xl font-black text-teal-600">#{selectedTooth || '--'}</span>
+              </h3>
+              <span className="text-xs bg-slate-100 px-2.5 py-1 rounded-full text-slate-600 font-semibold">
+                Nomenclatura FDI
+              </span>
+            </div>
+
+            {selectedTooth ? (
+              <div className="space-y-4">
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
+                  <label className="block text-xs font-bold text-slate-600 uppercase">Nota / Observación para esta pieza:</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Sensibilidad al frío, cavidad en extensión..."
+                    value={notesInput}
+                    onChange={(e) => setNotesInput(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Hallazgos registrados en pieza #{selectedTooth}:</h4>
+                  {selectedToothFindings.length === 0 ? (
+                    <p className="text-sm text-slate-400 italic py-2">Sin lesiones ni restauraciones registradas.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedToothFindings.map(f => {
+                        const meta = CONDITION_METAS[f.condition];
+                        return (
+                          <div key={f.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+                            <div className="flex items-center space-x-2">
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: meta?.color }} />
+                              <div>
+                                <span className="font-bold text-slate-800">{meta?.label}</span>
+                                <span className="text-slate-500 ml-2">({f.surface})</span>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => handleRemoveFinding(f.id)}
+                              className="text-slate-400 hover:text-red-600 transition p-1"
+                              title="Eliminar registro"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-slate-400 text-sm">Selecciona una pieza dental en el gráfico superior para ver o modificar su diagnóstico.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Global Patient Findings Table */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+              <FileText className="w-5 h-5 text-teal-600" />
+              Resumen Clínico General de Hallazgos ({findings.length})
+            </h3>
+          </div>
+
+          {findings.length === 0 ? (
+            <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <p className="font-semibold text-slate-700">Odontograma Sano</p>
+              <p className="text-xs text-slate-400">No se han marcado hallazgos patológicos en la dentadura.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-[280px]">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100 text-slate-600 font-bold uppercase sticky top-0">
+                  <tr>
+                    <th className="p-2.5 rounded-l-lg">Pieza</th>
+                    <th className="p-2.5">Superficie</th>
+                    <th className="p-2.5">Condición</th>
+                    <th className="p-2.5">Fecha</th>
+                    <th className="p-2.5">Notas</th>
+                    <th className="p-2.5 text-right rounded-r-lg">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {findings.map(f => {
+                    const meta = CONDITION_METAS[f.condition];
+                    return (
+                      <tr key={f.id} className="hover:bg-slate-50 transition">
+                        <td className="p-2.5 font-black text-teal-700 text-sm">#{f.toothNumber}</td>
+                        <td className="p-2.5 font-semibold capitalize text-slate-700">{f.surface}</td>
+                        <td className="p-2.5">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold ${meta?.bgClass} ${meta?.textClass}`}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: meta?.color }} />
+                            {meta?.label}
+                          </span>
+                        </td>
+                        <td className="p-2.5 text-slate-500">{f.date}</td>
+                        <td className="p-2.5 text-slate-600 max-w-[180px] truncate">{f.notes || '-'}</td>
+                        <td className="p-2.5 text-right">
+                          <button 
+                            onClick={() => handleRemoveFinding(f.id)}
+                            className="text-slate-400 hover:text-red-600 transition"
+                            title="Eliminar hallazgo"
+                          >
+                            <Trash2 className="w-4 h-4 inline" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
