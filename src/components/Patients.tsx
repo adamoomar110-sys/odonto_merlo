@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Patient, DentalXRay, HealthDeclaration } from '../types';
-import { Users, UserPlus, Search, ShieldAlert, Phone, Mail, FileText, Activity, ChevronRight, Stethoscope, Camera, Image, Plus, Eye, X, ZoomIn, Upload, Sparkles, ClipboardList, AlertCircle, Heart, HeartPulse, Pill, Baby, Flame } from 'lucide-react';
+import { Users, UserPlus, Search, ShieldAlert, Phone, Mail, FileText, Activity, ChevronRight, Stethoscope, Camera, Image, Plus, Eye, X, ZoomIn, Upload, Sparkles, ClipboardList, AlertCircle, Heart, HeartPulse, Pill, Baby, Flame, Printer } from 'lucide-react';
 
 interface PatientsProps {
   patients: Patient[];
@@ -363,13 +363,24 @@ export const Patients: React.FC<PatientsProps> = ({
                     </h4>
                   </div>
 
-                  <button
-                    onClick={openHealthModal}
-                    className="px-3.5 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
-                  >
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    <span>Editar Planilla de Salud</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={openHealthModal}
+                      className="px-3.5 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      <span>Editar Planilla</span>
+                    </button>
+
+                    <button
+                      onClick={() => window.print()}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs transition flex items-center gap-1.5 border border-slate-700 shadow-sm"
+                      title="Imprimir la Declaración Jurada para Firma Hológrafa del Paciente"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-teal-400" />
+                      <span>Imprimir para Firma</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Badges de Alerta Médica */}
@@ -974,6 +985,132 @@ export const Patients: React.FC<PatientsProps> = ({
           </div>
         </div>
       )}
+
+      {/* SECCIÓN OCULTA SOLO PARA IMPRESIÓN (PDF / PAPEL) DE LA DECLARACIÓN JURADA DE SALUD */}
+      <div className="hidden print:block fixed inset-0 bg-white p-8 text-slate-900 font-sans z-50 text-xs">
+        {/* Membrete Oficial */}
+        <div className="border-b-2 border-slate-900 pb-4 mb-4 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-black uppercase text-slate-900">ODONTO MERLO</h1>
+            <p className="text-xs text-slate-600 font-bold">Odontología Integral, Ortodoncia & Cirugía</p>
+            <p className="text-xs text-slate-500">Av. del Libertador 1450, Merlo | Tel: +54 9 11 4589-1234</p>
+          </div>
+          <div className="text-right">
+            <span className="text-xs font-bold bg-slate-100 px-3 py-1 border border-slate-300 rounded">
+              DOCUMENTO MÉDICO - LEGAL
+            </span>
+            <p className="text-xs font-bold text-slate-700 mt-2">Fecha: {new Date().toLocaleDateString('es-AR')}</p>
+          </div>
+        </div>
+
+        <h2 className="text-base font-black text-center uppercase tracking-wide mb-4 underline">
+          DECLARACIÓN JURADA DE SALUD Y ANAMNESIS ODONTOLÓGICA
+        </h2>
+
+        {/* Datos Filiatorios del Paciente */}
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-300 mb-4 space-y-2">
+          <h3 className="font-bold uppercase text-xs text-slate-800 border-b border-slate-200 pb-1 mb-1">
+            1. Datos Filiatorios del Paciente
+          </h3>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <p><strong>Paciente:</strong> {selectedPatient?.name}</p>
+            <p><strong>DNI / Documento:</strong> {selectedPatient?.dni}</p>
+            <p><strong>Edad:</strong> {selectedPatient?.age} años</p>
+            <p><strong>Teléfono:</strong> {selectedPatient?.phone}</p>
+            <p><strong>Obra Social / Prepaga:</strong> {selectedPatient?.healthInsurance}</p>
+            <p><strong>N° Afiliado:</strong> {selectedPatient?.insuranceNumber || 'N/A'}</p>
+          </div>
+        </div>
+
+        {/* Matriz de Enfermedades Preexistentes y Temporales */}
+        <div className="mb-4 space-y-2">
+          <h3 className="font-bold uppercase text-xs text-slate-800 border-b border-slate-300 pb-1">
+            2. Antecedentes Médicos y Estado de Salud Actual
+          </h3>
+
+          <table className="w-full border-collapse border border-slate-400 text-[11px]">
+            <thead>
+              <tr className="bg-slate-200">
+                <th className="border border-slate-400 p-1.5 text-left">Patología / Condición Médica</th>
+                <th className="border border-slate-400 p-1.5 text-center w-20">SI / NO</th>
+                <th className="border border-slate-400 p-1.5 text-left">Observaciones Odontológicas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Hipertensión Arterial</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.hypertension ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Presión arterial elevada</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Diabetes Mellitus</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.diabetes ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Control glucémico / cicatrización</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Cardiopatía / Marcapasos / Soplo</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.cardiacDisease ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Requiere profilaxis antibiótica</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Toma Anticoagulantes / Hemorragias</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.anticoagulants ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Riesgo de sangrado quirúrgico</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Alergia a Anestesia Local (Lidocaína/Novocaína)</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.localAnesthesiaAllergy ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Uso de anestésicos alternativos</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Alergias a Medicamentos / Penicilina / Látex</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.allergies && selectedPatient.allergies !== 'Ninguna conocida' ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">{selectedPatient?.allergies}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Embarazo o Lactancia</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{selectedPatient?.healthDeclaration?.pregnantOrLactating ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Precaución con Rx y fármacos</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 p-1.5 font-semibold">Infección Dental Activa / Flemón / Fiebre</td>
+                <td className="border border-slate-400 p-1.5 text-center font-bold">{(selectedPatient?.healthDeclaration?.activeInfection || selectedPatient?.healthDeclaration?.fever) ? 'SI [X]' : 'NO [ ]'}</td>
+                <td className="border border-slate-400 p-1.5 text-slate-600">Antibióticoterapia previa</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="bg-slate-50 p-2.5 rounded border border-slate-300 text-[11px] space-y-1">
+            <p><strong>Medicación Actual en Curso:</strong> {selectedPatient?.healthDeclaration?.currentMedication || 'Ninguna medicación informada.'}</p>
+            <p><strong>Cirugías u Operaciones Recientes:</strong> {selectedPatient?.healthDeclaration?.recentSurgeries || 'Sin cirugías recientes.'}</p>
+          </div>
+        </div>
+
+        {/* Texto de Declaración Jurada Legal */}
+        <div className="border border-slate-400 p-3 rounded-lg mb-8 text-[10px] leading-tight text-slate-800 bg-slate-50">
+          <p className="font-bold uppercase text-slate-900 mb-0.5">DECLARACIÓN JURADA Y CONSENTIMIENTO DE INFORMACIÓN:</p>
+          Declaro bajo juramento que todos los datos consignados en la presente Planilla de Anamnesis y Declaración Jurada de Salud son exactos, veraces y completos. Me comprometo a informar inmediatamente al profesional actuante ante cualquier cambio o modificación en mi estado de salud o tratamiento médico previo a cualquier procedimiento odontológico.
+        </div>
+
+        {/* Bloque de Firmas */}
+        <div className="grid grid-cols-2 gap-8 pt-6 text-xs text-center border-t border-slate-400">
+          <div>
+            <div className="border-t-2 border-slate-900 pt-2 w-3/4 mx-auto font-bold text-slate-900">
+              Firma del Paciente / Tutor Legal
+            </div>
+            <p className="text-[10px] text-slate-600 mt-2">Aclaración: _________________________________</p>
+            <p className="text-[10px] text-slate-600 mt-1">DNI N°: ____________________________________</p>
+          </div>
+
+          <div>
+            <div className="border-t-2 border-slate-900 pt-2 w-3/4 mx-auto font-bold text-slate-900">
+              Firma y Sello del Odontólogo
+            </div>
+            <p className="text-[10px] text-slate-600 mt-2">Dra. Amalia Merlo</p>
+            <p className="text-[10px] text-slate-600 mt-1">Matrícula Profesional N°: MP 45890</p>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
