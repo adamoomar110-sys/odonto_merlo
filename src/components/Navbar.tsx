@@ -1,24 +1,27 @@
 import React from 'react';
-import { Calendar, Users, FileText, DollarSign, Activity, Stethoscope } from 'lucide-react';
+import { Calendar, Users, FileText, DollarSign, Activity, Stethoscope, Settings as SettingsIcon } from 'lucide-react';
 
-export type ActiveTab = 'odontogram' | 'appointments' | 'patients' | 'budgets';
+export type ActiveTab = 'odontogram' | 'appointments' | 'patients' | 'budgets' | 'settings';
 
 interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   todayAppointmentsCount: number;
+  clinicName?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
-  todayAppointmentsCount
+  todayAppointmentsCount,
+  clinicName = 'Odonto Merlo'
 }) => {
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'odontogram', label: 'Odontograma FDI', icon: <Stethoscope className="w-4 h-4" /> },
     { id: 'appointments', label: 'Turnos & Agenda', icon: <Calendar className="w-4 h-4" />, badge: todayAppointmentsCount },
     { id: 'patients', label: 'Historias Clínicas', icon: <Users className="w-4 h-4" /> },
     { id: 'budgets', label: 'Presupuestos', icon: <DollarSign className="w-4 h-4" /> },
+    { id: 'settings', label: 'Configuración', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
 
   return (
@@ -33,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <h1 className="font-extrabold text-lg text-slate-900 tracking-tight leading-tight flex items-center gap-2">
-                Odonto Merlo
+                {clinicName}
                 <span className="text-[10px] font-bold uppercase bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full border border-teal-200">
                   Clínico v1.0
                 </span>

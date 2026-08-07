@@ -4,15 +4,18 @@ import { Odontogram } from './components/Odontogram';
 import { Appointments } from './components/Appointments';
 import { Patients } from './components/Patients';
 import { Budgets } from './components/Budgets';
+import { Settings } from './components/Settings';
 import { Footer } from './components/Footer';
 import { IntroScreen } from './components/IntroScreen';
+import { MainMenu } from './components/MainMenu';
+import { PatientBooking } from './components/PatientBooking';
 import { Login } from './components/Login';
 import { Registro } from './components/Registro';
 import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS } from './data/mockData';
-import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus } from './types';
-import { Calendar, Users } from 'lucide-react';
+import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist } from './types';
+import { Calendar, Users, LogOut } from 'lucide-react';
 
-type AppPhase = 'intro' | 'login' | 'registro' | 'app';
+type AppPhase = 'intro' | 'main_menu' | 'booking' | 'login' | 'registro' | 'app';
 
 export const App: React.FC = () => {
   // ── TODOS los hooks siempre al tope (regla de React) ──
@@ -23,6 +26,15 @@ export const App: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(INITIAL_PATIENTS[0].id);
+
+  // Estado del consultorio y staff de odontólogos
+  const [clinicName, setClinicName] = useState<string>('Odonto Merlo');
+  const [clinicAddress, setClinicAddress] = useState<string>('Av. del Libertador 1450, Merlo');
+  const [clinicPhone, setClinicPhone] = useState<string>('+54 9 11 4589-1234');
+  const [dentists, setDentists] = useState<Dentist[]>([
+    { id: 'den-1', name: 'Dra. Amalia Merlo', licenseNumber: 'MP 45890', specialty: 'Ortodoncia & Operatoria', phone: '+54 9 11 4589-1234', email: 'dra.merlo@odontomerlo.com', active: true },
+    { id: 'den-2', name: 'Dr. Fernando Ruiz', licenseNumber: 'MP 51203', specialty: 'Endodoncia & Cirugía', phone: '+54 9 11 6723-9988', email: 'dr.ruiz@odontomerlo.com', active: true }
+  ]);
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || patients[0];
 
@@ -58,12 +70,43 @@ export const App: React.FC = () => {
     }));
   };
 
+  // Handlers Odontólogos
+  const handleAddDentist = (newDentist: Dentist) => {
+    setDentists(prev => [newDentist, ...prev]);
+  };
+
+  const handleToggleDentistStatus = (id: string) => {
+    setDentists(prev => prev.map(d => d.id === id ? { ...d, active: !d.active } : d));
+  };
+
+  const handleDeleteDentist = (id: string) => {
+    setDentists(prev => prev.filter(d => d.id !== id));
+  };
+
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === todayStr);
 
-  // ── Flujo de fases (después de todos los hooks) ──
+  // ── Flujo de fases ──
   if (appPhase === 'intro') {
-    return <IntroScreen onFinish={() => setAppPhase('login')} />;
+    return <IntroScreen onFinish={() => setAppPhase('main_menu')} />;
+  }
+
+  if (appPhase === 'main_menu') {
+    return (
+      <MainMenu
+        onSelectConsultorio={() => setAppPhase('login')}
+        onSelectReservarTurno={() => setAppPhase('booking')}
+      />
+    );
+  }
+
+  if (appPhase === 'booking') {
+    return (
+      <PatientBooking
+        onBackToMenu={() => setAppPhase('main_menu')}
+        onAddAppointment={handleAddAppointment}
+      />
+    );
   }
 
   if (appPhase === 'login') {
@@ -81,6 +124,7 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         todayAppointmentsCount={todayAppointments.length}
+        clinicName={clinicName}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
@@ -106,6 +150,13 @@ export const App: React.FC = () => {
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-teal-600" /> {todayAppointments.length} Turnos Hoy
               </span>
+              <button
+                onClick={() => setAppPhase('main_menu')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-colors border border-slate-300"
+              >
+                <LogOut className="w-3.5 h-3.5 text-slate-600" />
+                <span>Menú Principal</span>
+              </button>
             </div>
           </div>
         )}
@@ -142,6 +193,21 @@ export const App: React.FC = () => {
             patients={patients}
             onAddBudget={handleAddBudget}
             onUpdatePayment={handleUpdatePayment}
+          />
+        )}
+
+        {activeTab === 'settings' && (
+          <Settings
+            clinicName={clinicName}
+            onUpdateClinicName={setClinicName}
+            clinicAddress={clinicAddress}
+            onUpdateClinicAddress={setClinicAddress}
+            clinicPhone={clinicPhone}
+            onUpdateClinicPhone={setClinicPhone}
+            dentists={dentists}
+            onAddDentist={handleAddDentist}
+            onToggleDentistStatus={handleToggleDentistStatus}
+            onDeleteDentist={handleDeleteDentist}
           />
         )}
 

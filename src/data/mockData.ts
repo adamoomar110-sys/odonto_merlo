@@ -82,6 +82,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     age: 38,
     phone: '+54 9 11 4589-1234',
     email: 'carlos.gomez@email.com',
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     healthInsurance: 'OSDE 310',
     insuranceNumber: '4890123901',
     medicalHistory: 'Hipertensión controlada con enalapril. Sin cirugías previas.',
@@ -94,6 +95,24 @@ export const INITIAL_PATIENTS: Patient[] = [
       { id: 'f-4', toothNumber: 36, surface: 'pieza', condition: 'endodoncia', date: '2026-03-20', notes: 'Conducto rematado en 3 conductos' },
       { id: 'f-5', toothNumber: 46, surface: 'pieza', condition: 'ausente', date: '2025-11-04', notes: 'Exodoncia antigua' },
       { id: 'f-6', toothNumber: 11, surface: 'vestibular', condition: 'sellador', date: '2026-01-12', notes: 'Protección preventiva' },
+    ],
+    xrays: [
+      {
+        id: 'xr-1',
+        date: '2026-07-10',
+        title: 'Radiografía Panorámica Maxilar',
+        type: 'panoramica',
+        imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80',
+        notes: 'Evaluación general de maxilares y piezas 16, 24, 36. Se observa ligera rarefacción en pieza 36.'
+      },
+      {
+        id: 'xr-2',
+        date: '2026-03-18',
+        title: 'Periapical Pieza 36 (Pre-Conducto)',
+        type: 'periapical',
+        imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80',
+        notes: 'Conductos mesiales visibles de 19mm. Sin lesión periapical evidente.'
+      }
     ]
   },
   {
@@ -103,6 +122,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     age: 44,
     phone: '+54 9 11 6723-9988',
     email: 'mflor.rossi@email.com',
+    photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80',
     healthInsurance: 'Swiss Medical',
     insuranceNumber: '89012384',
     medicalHistory: 'Sin patologías previas.',
@@ -113,6 +133,16 @@ export const INITIAL_PATIENTS: Patient[] = [
       { id: 'f-8', toothNumber: 26, surface: 'pieza', condition: 'corona', date: '2026-02-18', notes: 'Corona porcelana sobre zirconio' },
       { id: 'f-9', toothNumber: 38, surface: 'pieza', condition: 'ausente', date: '2024-09-10' },
       { id: 'f-10', toothNumber: 48, surface: 'pieza', condition: 'ausente', date: '2024-09-10' },
+    ],
+    xrays: [
+      {
+        id: 'xr-3',
+        date: '2026-02-15',
+        title: 'Radiografía Panorámica Ortodoncia',
+        type: 'panoramica',
+        imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80',
+        notes: 'Alineación de arcadas superior e inferior. Control pre-ortodóncico.'
+      }
     ]
   },
   {
@@ -122,6 +152,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     age: 26,
     phone: '+54 9 11 3412-8877',
     email: 'joaco.benitez@email.com',
+    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
     healthInsurance: 'IOMA',
     insuranceNumber: '77612349',
     medicalHistory: 'Bruxismo leve nocturno. Usa placa de descanso.',

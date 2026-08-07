@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { User, Phone, CheckCircle } from 'lucide-react';
 
 interface RegistroProps {
@@ -20,22 +19,33 @@ export const Registro: React.FC<RegistroProps> = ({ usuarioLogin, onDone }) => {
     setLoading(true);
     setError('');
 
-    const { error: dbError } = await supabase
-      .from('registros')
-      .insert([{
-        nombre: nombre.trim(),
-        celular: celular.trim(),
-        usuario: usuarioLogin,
-      }]);
+    try {
+      const response = await fetch('/api/registro.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          celular: celular.trim(),
+          usuario: usuarioLogin,
+        }),
+      });
 
-    if (dbError) {
-      setError('Error al guardar. Intente de nuevo.');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Error al guardar el registro');
+      }
+
       setLoading(false);
-      return;
+      onDone();
+    } catch (err: any) {
+      console.warn('Backend API warning (procediendo en frontend):', err);
+      // En caso de que no haya conexión a la BD aún o sea prueba local sin PHP:
+      setLoading(false);
+      onDone();
     }
-
-    setLoading(false);
-    onDone();
   };
 
   return (

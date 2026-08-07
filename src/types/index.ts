@@ -30,6 +30,15 @@ export interface ToothFinding {
   notes?: string;
 }
 
+export interface DentalXRay {
+  id: string;
+  date: string;
+  title: string;
+  type: 'panoramica' | 'periapical' | 'oclusal' | 'tomografia';
+  imageUrl: string;
+  notes?: string;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -37,11 +46,13 @@ export interface Patient {
   age: number;
   phone: string;
   email: string;
+  photoUrl?: string; // Foto opcional del paciente
   healthInsurance: string;
   insuranceNumber: string;
   medicalHistory: string;
   allergies: string;
   odontogramFindings: ToothFinding[];
+  xrays?: DentalXRay[]; // Radiografías opcionales
   notes: string;
 }
 
@@ -77,3 +88,14 @@ export interface Budget {
   paidAmount: number;
   status: 'borrador' | 'aprobado' | 'en_proceso' | 'completado';
 }
+
+export interface Dentist {
+  id: string;
+  name: string;
+  licenseNumber: string; // Matrícula Profesional
+  specialty: string;
+  phone: string;
+  email: string;
+  active: boolean;
+}
+
