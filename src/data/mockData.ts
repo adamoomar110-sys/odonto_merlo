@@ -87,6 +87,22 @@ export const INITIAL_PATIENTS: Patient[] = [
     insuranceNumber: '4890123901',
     medicalHistory: 'Hipertensión controlada con enalapril. Sin cirugías previas.',
     allergies: 'Penicilina (Alergia moderada)',
+    healthDeclaration: {
+      date: '2026-07-15',
+      hypertension: true,
+      diabetes: false,
+      cardiacDisease: false,
+      anticoagulants: false,
+      respiratoryDisease: false,
+      hepatitis: false,
+      epilepsy: false,
+      activeInfection: true,
+      fever: false,
+      pregnantOrLactating: false,
+      currentMedication: 'Enalapril 10mg diario, Amoxicilina 500mg por 7 días',
+      recentSurgeries: 'Ninguna',
+      localAnesthesiaAllergy: false
+    },
     notes: 'Paciente con sensibilidad en premolares superiores.',
     odontogramFindings: [
       { id: 'f-1', toothNumber: 16, surface: 'oclusal', condition: 'caries', date: '2026-07-15', notes: 'Caries oclusal Grado II' },

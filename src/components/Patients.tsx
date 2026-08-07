@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Patient, DentalXRay } from '../types';
-import { Users, UserPlus, Search, ShieldAlert, Phone, Mail, FileText, Activity, ChevronRight, Stethoscope, Camera, Image, Plus, Eye, X, ZoomIn, Upload, Sparkles } from 'lucide-react';
+import { Patient, DentalXRay, HealthDeclaration } from '../types';
+import { Users, UserPlus, Search, ShieldAlert, Phone, Mail, FileText, Activity, ChevronRight, Stethoscope, Camera, Image, Plus, Eye, X, ZoomIn, Upload, Sparkles, ClipboardList, AlertCircle, Heart, HeartPulse, Pill, Baby, Flame } from 'lucide-react';
 
 interface PatientsProps {
   patients: Patient[];
@@ -20,6 +20,7 @@ export const Patients: React.FC<PatientsProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [showXRayModal, setShowXRayModal] = useState<boolean>(false);
+  const [showHealthModal, setShowHealthModal] = useState<boolean>(false);
   const [activeXRayLightbox, setActiveXRayLightbox] = useState<DentalXRay | null>(null);
 
   // Form State Paciente Nuevo
@@ -49,6 +50,65 @@ export const Patients: React.FC<PatientsProps> = ({
   );
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || patients[0];
+
+  // Form State Planilla de Salud (Anamnesis)
+  const [hypertension, setHypertension] = useState<boolean>(selectedPatient?.healthDeclaration?.hypertension || false);
+  const [diabetes, setDiabetes] = useState<boolean>(selectedPatient?.healthDeclaration?.diabetes || false);
+  const [cardiacDisease, setCardiacDisease] = useState<boolean>(selectedPatient?.healthDeclaration?.cardiacDisease || false);
+  const [anticoagulants, setAnticoagulants] = useState<boolean>(selectedPatient?.healthDeclaration?.anticoagulants || false);
+  const [respiratoryDisease, setRespiratoryDisease] = useState<boolean>(selectedPatient?.healthDeclaration?.respiratoryDisease || false);
+  const [hepatitis, setHepatitis] = useState<boolean>(selectedPatient?.healthDeclaration?.hepatitis || false);
+  const [epilepsy, setEpilepsy] = useState<boolean>(selectedPatient?.healthDeclaration?.epilepsy || false);
+  const [activeInfection, setActiveInfection] = useState<boolean>(selectedPatient?.healthDeclaration?.activeInfection || false);
+  const [fever, setFever] = useState<boolean>(selectedPatient?.healthDeclaration?.fever || false);
+  const [pregnantOrLactating, setPregnantOrLactating] = useState<boolean>(selectedPatient?.healthDeclaration?.pregnantOrLactating || false);
+  const [localAnesthesiaAllergy, setLocalAnesthesiaAllergy] = useState<boolean>(selectedPatient?.healthDeclaration?.localAnesthesiaAllergy || false);
+  const [currentMedication, setCurrentMedication] = useState<string>(selectedPatient?.healthDeclaration?.currentMedication || '');
+  const [recentSurgeries, setRecentSurgeries] = useState<string>(selectedPatient?.healthDeclaration?.recentSurgeries || '');
+
+  const openHealthModal = () => {
+    if (selectedPatient?.healthDeclaration) {
+      setHypertension(selectedPatient.healthDeclaration.hypertension);
+      setDiabetes(selectedPatient.healthDeclaration.diabetes);
+      setCardiacDisease(selectedPatient.healthDeclaration.cardiacDisease);
+      setAnticoagulants(selectedPatient.healthDeclaration.anticoagulants);
+      setRespiratoryDisease(selectedPatient.healthDeclaration.respiratoryDisease);
+      setHepatitis(selectedPatient.healthDeclaration.hepatitis);
+      setEpilepsy(selectedPatient.healthDeclaration.epilepsy);
+      setActiveInfection(selectedPatient.healthDeclaration.activeInfection);
+      setFever(selectedPatient.healthDeclaration.fever);
+      setPregnantOrLactating(selectedPatient.healthDeclaration.pregnantOrLactating);
+      setLocalAnesthesiaAllergy(selectedPatient.healthDeclaration.localAnesthesiaAllergy);
+      setCurrentMedication(selectedPatient.healthDeclaration.currentMedication || '');
+      setRecentSurgeries(selectedPatient.healthDeclaration.recentSurgeries || '');
+    }
+    setShowHealthModal(true);
+  };
+
+  const handleSaveHealthDeclaration = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient) return;
+
+    const updatedDecl: HealthDeclaration = {
+      date: new Date().toISOString().split('T')[0],
+      hypertension,
+      diabetes,
+      cardiacDisease,
+      anticoagulants,
+      respiratoryDisease,
+      hepatitis,
+      epilepsy,
+      activeInfection,
+      fever,
+      pregnantOrLactating,
+      localAnesthesiaAllergy,
+      currentMedication,
+      recentSurgeries
+    };
+
+    selectedPatient.healthDeclaration = updatedDecl;
+    setShowHealthModal(false);
+  };
 
   const handleCreatePatient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,7 +195,7 @@ export const Patients: React.FC<PatientsProps> = ({
             <Users className="w-6 h-6 text-teal-600" />
             Fichas e Historias Clínicas de Pacientes
           </h2>
-          <p className="text-sm text-slate-500">Gestión de datos filiatorios, fotos de perfil, radiografías y antecedentes de salud.</p>
+          <p className="text-sm text-slate-500">Gestión de datos filiatorios, fotos, radiografías y planilla de enfermedades preexistentes/temporales.</p>
         </div>
 
         <button
@@ -150,7 +210,7 @@ export const Patients: React.FC<PatientsProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column: Patients List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col h-[720px] lg:col-span-1">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col h-[750px] lg:col-span-1">
           <div className="relative mb-4">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
@@ -208,7 +268,7 @@ export const Patients: React.FC<PatientsProps> = ({
         </div>
 
         {/* Right Column: Selected Patient Detail Card & Clinical Sheet */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-2 flex flex-col justify-between overflow-y-auto max-h-[720px]">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-2 flex flex-col justify-between overflow-y-auto max-h-[750px] space-y-6">
           {selectedPatient ? (
             <div className="space-y-6">
               
@@ -293,6 +353,97 @@ export const Patients: React.FC<PatientsProps> = ({
 
               </div>
 
+              {/* SECCIÓN NUEVA: PLANILLA DE ENFERMEDADES PREEXISTENTES Y TEMPORALES (ANAMNESIS) */}
+              <div className="bg-slate-900 text-slate-100 rounded-2xl p-5 border border-slate-800 space-y-4 shadow-md">
+                <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <ClipboardList className="w-5 h-5 text-teal-400" />
+                    <h4 className="text-sm font-extrabold tracking-wide text-white">
+                      Declaración Jurada de Salud & Enfermedades Preexistentes (Anamnesis)
+                    </h4>
+                  </div>
+
+                  <button
+                    onClick={openHealthModal}
+                    className="px-3.5 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    <span>Editar Planilla de Salud</span>
+                  </button>
+                </div>
+
+                {/* Badges de Alerta Médica */}
+                <div className="flex flex-wrap gap-2">
+                  {selectedPatient.healthDeclaration?.hypertension && (
+                    <span className="px-3 py-1 bg-red-500/20 text-red-300 border border-red-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      🔴 Hipertensión Arterial
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.diabetes && (
+                    <span className="px-3 py-1 bg-red-500/20 text-red-300 border border-red-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      🔴 Diabetes Mellitus
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.cardiacDisease && (
+                    <span className="px-3 py-1 bg-red-500/20 text-red-300 border border-red-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      ❤️ Cardiopatía / Marcapasos
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.anticoagulants && (
+                    <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      ⚠️ Anticoagulados / Hemorragias
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.pregnantOrLactating && (
+                    <span className="px-3 py-1 bg-sky-500/20 text-sky-300 border border-sky-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      🤰 Embarazo / Lactancia
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.localAnesthesiaAllergy && (
+                    <span className="px-3 py-1 bg-red-600/30 text-red-200 border border-red-500/50 rounded-full text-xs font-extrabold flex items-center gap-1">
+                      🛑 Alergia a Anestesia Local
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.activeInfection && (
+                    <span className="px-3 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/40 rounded-full text-xs font-bold flex items-center gap-1">
+                      🔥 Infección Activa en Curso
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.respiratoryDisease && (
+                    <span className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 rounded-full text-xs font-bold">
+                      🫁 Asma / Afección Respiratoria
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.hepatitis && (
+                    <span className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 rounded-full text-xs font-bold">
+                      🩺 Hepatitis / Enf. Hepática
+                    </span>
+                  )}
+                  {selectedPatient.healthDeclaration?.epilepsy && (
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full text-xs font-bold">
+                      🧠 Epilepsia / Convulsiones
+                    </span>
+                  )}
+                  {!selectedPatient.healthDeclaration && (
+                    <span className="text-xs text-slate-400 italic">No se ha completado la planilla de enfermedades preexistentes aún.</span>
+                  )}
+                </div>
+
+                {/* Detalles de medicación y cirugías */}
+                {selectedPatient.healthDeclaration && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2 border-t border-slate-800 text-slate-300">
+                    <div>
+                      <strong className="text-teal-400 block mb-0.5">Medicación Actual en Curso:</strong>
+                      <span>{selectedPatient.healthDeclaration.currentMedication || 'Ninguna medicación informada.'}</span>
+                    </div>
+                    <div>
+                      <strong className="text-teal-400 block mb-0.5">Cirugías u Operaciones Recientes:</strong>
+                      <span>{selectedPatient.healthDeclaration.recentSurgeries || 'Sin cirugías recientes.'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* SECCIÓN DE RADIOGRAFÍAS ODONTOLÓGICAS (OPCIONAL) */}
               <div className="bg-slate-900 text-slate-100 rounded-2xl p-5 border border-slate-800 space-y-4 shadow-md">
                 <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3">
@@ -320,7 +471,6 @@ export const Patients: React.FC<PatientsProps> = ({
                   <div className="text-center py-6 px-4 bg-slate-950/60 rounded-xl border border-slate-800/80">
                     <Camera className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                     <p className="text-xs text-slate-400 font-medium">No hay radiografías ni estudios cargados para este paciente.</p>
-                    <p className="text-[11px] text-slate-500 mt-1">Haz clic en "Adjuntar Radiografía" para subir placas panorámicas o periapicales.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -536,6 +686,143 @@ export const Patients: React.FC<PatientsProps> = ({
                   className="px-5 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-md transition"
                 >
                   Guardar Paciente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPLETAR / EDITAR PLANILLA DE SALUD (ANAMNESIS) */}
+      {showHealthModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-800 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col animate-fade-in">
+            <div className="bg-slate-800 px-6 py-4 flex items-center justify-between border-b border-slate-700">
+              <h3 className="font-bold text-base flex items-center gap-2 text-teal-300">
+                <ClipboardList className="w-5 h-5 text-teal-400" /> Planilla de Salud & Enfermedades Preexistentes
+              </h3>
+              <button onClick={() => setShowHealthModal(false)} className="text-slate-400 hover:text-white font-bold text-lg">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveHealthDeclaration} className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
+              
+              {/* Sección Enfermedades Preexistentes / Crónicas */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-teal-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1">
+                  1. Enfermedades Preexistentes / Crónicas
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={hypertension} onChange={e => setHypertension(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Hipertensión Arterial</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={diabetes} onChange={e => setDiabetes(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Diabetes Mellitus</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={cardiacDisease} onChange={e => setCardiacDisease(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Cardiopatía / Marcapasos</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={anticoagulants} onChange={e => setAnticoagulants(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-amber-300">Toma Anticoagulantes / Hemorragias</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={respiratoryDisease} onChange={e => setRespiratoryDisease(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Asma / Enfermedad Respiratoria</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={hepatitis} onChange={e => setHepatitis(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Hepatitis / Enf. Hepática</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={epilepsy} onChange={e => setEpilepsy(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Epilepsia / Convulsiones</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Sección Afecciones Temporales y Estado Actual */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-teal-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1">
+                  2. Afecciones Temporales & Estado Actual
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={activeInfection} onChange={e => setActiveInfection(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-orange-300">Infección Dental Activa / Flemón</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={fever} onChange={e => setFever(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-slate-200">Fiebre Reciente</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={pregnantOrLactating} onChange={e => setPregnantOrLactating(e.target.checked)} className="rounded text-teal-500 focus:ring-teal-500 w-4 h-4" />
+                    <span className="font-semibold text-sky-300">Embarazo o Lactancia</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" checked={localAnesthesiaAllergy} onChange={e => setLocalAnesthesiaAllergy(e.target.checked)} className="rounded text-red-500 focus:ring-red-500 w-4 h-4" />
+                    <span className="font-semibold text-red-300">Alergia a Anestesia Local / Novocaína</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Medicación en curso y cirugías */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-teal-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1">
+                  3. Medicación y Cirugías Recientes
+                </h4>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Medicación Actual en Curso (Antibióticos, Analgésicos, Presión):</label>
+                  <input
+                    type="text"
+                    value={currentMedication}
+                    onChange={e => setCurrentMedication(e.target.value)}
+                    placeholder="Ej: Amoxicilina 500mg, Enalapril, Aspirina..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Cirugías u Operaciones Recientes:</label>
+                  <input
+                    type="text"
+                    value={recentSurgeries}
+                    onChange={e => setRecentSurgeries(e.target.value)}
+                    placeholder="Ej: Cirugía cardíaca en 2024, Prótesis..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowHealthModal(false)}
+                  className="px-4 py-2 font-bold text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 font-bold text-slate-950 bg-teal-400 hover:bg-teal-300 rounded-xl shadow-md transition"
+                >
+                  Guardar Planilla de Salud
                 </button>
               </div>
             </form>

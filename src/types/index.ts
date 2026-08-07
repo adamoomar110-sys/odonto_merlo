@@ -39,6 +39,25 @@ export interface DentalXRay {
   notes?: string;
 }
 
+export interface HealthDeclaration {
+  date: string;
+  // Preexistentes / Crónicas
+  hypertension: boolean; // Hipertensión Arterial
+  diabetes: boolean; // Diabetes
+  cardiacDisease: boolean; // Cardiopatías / Marcapasos
+  anticoagulants: boolean; // Anticoagulados / Hemorragias
+  respiratoryDisease: boolean; // Asma / Enf. Respiratoria
+  hepatitis: boolean; // Hepatitis / Enf. Hepática
+  epilepsy: boolean; // Epilepsia / Convulsiones
+  // Temporales / Estado Actual
+  activeInfection: boolean; // Infección activa
+  fever: boolean; // Fiebre reciente
+  pregnantOrLactating: boolean; // Embarazo o Lactancia
+  currentMedication: string; // Medicación actual en curso
+  recentSurgeries: string; // Cirugías recientes
+  localAnesthesiaAllergy: boolean; // Alergia a Anestesia Local
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -51,6 +70,7 @@ export interface Patient {
   insuranceNumber: string;
   medicalHistory: string;
   allergies: string;
+  healthDeclaration?: HealthDeclaration; // Planilla de enfermedades preexistentes y temporales (Anamnesis)
   odontogramFindings: ToothFinding[];
   xrays?: DentalXRay[]; // Radiografías opcionales
   notes: string;
