@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus } from 'lucide-react';
 import { Appointment } from '../types';
 
 interface PatientBookingProps {
   onBackToMenu: () => void;
   onAddAppointment: (appointment: Appointment) => void;
+  onTriggerTicket?: (appointment: Appointment) => void;
 }
 
-export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, onAddAppointment }) => {
+export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, onAddAppointment, onTriggerTicket }) => {
   const [step, setStep] = useState<'schedule' | 'details' | 'payment' | 'confirmed'>('schedule');
   
   // Selección de fecha y turno
@@ -69,6 +70,9 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
       };
 
       onAddAppointment(newApp);
+      if (onTriggerTicket) {
+        onTriggerTicket(newApp);
+      }
       setIsProcessingPayment(false);
       setStep('confirmed');
     }, 1800);
@@ -427,22 +431,44 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            <div className="flex flex-col gap-3 max-w-md mx-auto">
               <a
                 href={`https://wa.me/5491123456789?text=Hola%20OdontoMerlo,%20acabo%20de%20reservar%20mi%20turno%20para%20el%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Enviar Comprobante por WhatsApp</span>
               </a>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <a
+                  href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Turno+Odontologico+${encodeURIComponent(selectedSpecialty)}&dates=${selectedDate.replace(/-/g, '')}T${selectedTime.replace(':', '')}00/${selectedDate.replace(/-/g, '')}T${selectedTime.replace(':', '')}00&details=Turno+Odontologico+en+OdontoMerlo+con+la+Dra.+Amalia+Merlo`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-3 px-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md"
+                >
+                  <CalendarPlus className="w-4 h-4" />
+                  <span>Agendar en Google Calendar</span>
+                </a>
+
+                <a
+                  href={`https://wa.me/5491123456789?text=Hola%20OdontoMerlo,%20te%20escribo%20por%20un%20imprevisto%20con%20mi%20turno%20del%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-700"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>Avisar Imprevisto</span>
+                </a>
+              </div>
+
               <button
                 onClick={onBackToMenu}
-                className="py-3.5 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm rounded-xl transition-all"
+                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all border border-slate-800"
               >
-                Volver al Menú
+                Volver al Menú Principal
               </button>
             </div>
           </div>

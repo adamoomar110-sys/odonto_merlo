@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Appointment, Patient, AppointmentStatus } from '../types';
-import { Calendar, Clock, Plus, Search, CheckCircle, XCircle, AlertCircle, MessageSquare, User, Filter, Phone } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, CheckCircle, XCircle, AlertCircle, MessageSquare, User, Filter, Phone, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface AppointmentsProps {
   appointments: Appointment[];
   patients: Patient[];
   onAddAppointment: (newApp: Appointment) => void;
   onUpdateStatus: (id: string, status: AppointmentStatus) => void;
+  onTriggerTicket?: (app: Appointment) => void;
 }
 
 export const Appointments: React.FC<AppointmentsProps> = ({
   appointments,
   patients,
   onAddAppointment,
-  onUpdateStatus
+  onUpdateStatus,
+  onTriggerTicket
 }) => {
   const [filterDate, setFilterDate] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -22,7 +24,7 @@ export const Appointments: React.FC<AppointmentsProps> = ({
 
   // Form State
   const [selectedPatientId, setSelectedPatientId] = useState<string>(patients[0]?.id || '');
-  const [dentistName, setDentistName] = useState<string>('Dr. Rodrigo Merlo');
+  const [dentistName, setDentistName] = useState<string>('Dra. Amalia Merlo');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState<string>('10:00');
   const [specialty, setSpecialty] = useState<string>('Consultorio General');
@@ -54,12 +56,22 @@ export const Appointments: React.FC<AppointmentsProps> = ({
     };
 
     onAddAppointment(newApp);
+    if (onTriggerTicket) {
+      onTriggerTicket(newApp);
+    }
     setShowModal(false);
     setNotes('');
   };
 
   const generateWhatsAppMessage = (app: Appointment) => {
-    const text = `Hola ${app.patientName}, te recordamos tu turno en *Odonto Merlo* el día ${app.date} a las ${app.time} hs con ${app.dentistName} (${app.specialty}). Por favor confirma tu asistencia. ¡Te esperamos!`;
+    const text = `Hola ${app.patientName}, te recordamos tu turno en *Odonto Merlo* el día ${app.date} a las ${app.time} hs con ${app.dentistName} (${app.specialty}). Por favor confirma tu asistencia respondiendo a este mensaje. ¡Te esperamos!`;
+    const encoded = encodeURIComponent(text);
+    const cleanPhone = app.patientPhone.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank');
+  };
+
+  const generateWhatsAppImprevistoMessage = (app: Appointment) => {
+    const text = `Hola ${app.patientName}, te contactamos desde *Odonto Merlo* por un imprevisto de fuerza mayor con tu turno del día ${app.date} a las ${app.time} hs (${app.specialty}). Nos gustaría reprogramar tu cita. Por favor dinos qué horario te queda cómodo. ¡Muchas gracias!`;
     const encoded = encodeURIComponent(text);
     const cleanPhone = app.patientPhone.replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank');
@@ -181,11 +193,20 @@ export const Appointments: React.FC<AppointmentsProps> = ({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => generateWhatsAppMessage(app)}
-                      className="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200 flex items-center gap-1.5 text-xs font-bold"
-                      title="Enviar recordatorio por WhatsApp"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200 flex items-center gap-1 text-xs font-bold"
+                      title="Enviar recordatorio 24hs por WhatsApp"
                     >
-                      <MessageSquare className="w-4 h-4 text-emerald-600" />
-                      WhatsApp
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Recordatorio 24hs</span>
+                    </button>
+
+                    <button
+                      onClick={() => generateWhatsAppImprevistoMessage(app)}
+                      className="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 transition border border-amber-200 flex items-center gap-1 text-xs font-bold"
+                      title="Avisar imprevisto o reprogramación por WhatsApp"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Avisar Imprevisto</span>
                     </button>
 
                     <select

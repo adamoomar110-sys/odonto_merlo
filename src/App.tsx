@@ -11,6 +11,7 @@ import { MainMenu } from './components/MainMenu';
 import { PatientBooking } from './components/PatientBooking';
 import { Login } from './components/Login';
 import { Registro } from './components/Registro';
+import { NewAppointmentTicket } from './components/NewAppointmentTicket';
 import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS } from './data/mockData';
 import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist } from './types';
 import { Calendar, Users, LogOut } from 'lucide-react';
@@ -26,6 +27,9 @@ export const App: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(INITIAL_PATIENTS[0].id);
+
+  // Estado del ticket flotante de 10s
+  const [latestTicketAppointment, setLatestTicketAppointment] = useState<Appointment | null>(null);
 
   // Estado del consultorio y staff de odontólogos
   const [clinicName, setClinicName] = useState<string>('Odonto Merlo');
@@ -118,10 +122,17 @@ export const App: React.FC = () => {
 
   if (appPhase === 'booking') {
     return (
-      <PatientBooking
-        onBackToMenu={() => setAppPhase('main_menu')}
-        onAddAppointment={handleAddAppointment}
-      />
+      <>
+        <PatientBooking
+          onBackToMenu={() => setAppPhase('main_menu')}
+          onAddAppointment={handleAddAppointment}
+          onTriggerTicket={(app) => setLatestTicketAppointment(app)}
+        />
+        <NewAppointmentTicket
+          appointment={latestTicketAppointment}
+          onClose={() => setLatestTicketAppointment(null)}
+        />
+      </>
     );
   }
 
@@ -135,7 +146,7 @@ export const App: React.FC = () => {
 
   // ── App principal ──
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-teal-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans selection:bg-teal-500 selection:text-white relative">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -187,6 +198,7 @@ export const App: React.FC = () => {
             patients={patients}
             onAddAppointment={handleAddAppointment}
             onUpdateStatus={handleUpdateAppointmentStatus}
+            onTriggerTicket={(app) => setLatestTicketAppointment(app)}
           />
         )}
 
@@ -234,6 +246,12 @@ export const App: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Ticket Emergente de 10 Segundos */}
+      <NewAppointmentTicket
+        appointment={latestTicketAppointment}
+        onClose={() => setLatestTicketAppointment(null)}
+      />
     </div>
   );
 };
