@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save } from 'lucide-react';
-import { Dentist } from '../types';
+import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save, Download, Upload, Database, RefreshCw, AlertCircle } from 'lucide-react';
+import { Dentist, Patient, Appointment, Budget } from '../types';
 
 interface SettingsProps {
   clinicName: string;
@@ -13,6 +13,10 @@ interface SettingsProps {
   onAddDentist: (dentist: Dentist) => void;
   onToggleDentistStatus: (id: string) => void;
   onDeleteDentist: (id: string) => void;
+  patients: Patient[];
+  appointments: Appointment[];
+  budgets: Budget[];
+  onRestoreBackupData: (backupData: any) => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
@@ -26,6 +30,10 @@ export const Settings: React.FC<SettingsProps> = ({
   onAddDentist,
   onToggleDentistStatus,
   onDeleteDentist,
+  patients,
+  appointments,
+  budgets,
+  onRestoreBackupData
 }) => {
   // Estado local para los campos del consultorio
   const [tempClinicName, setTempClinicName] = useState(clinicName);
@@ -40,6 +48,10 @@ export const Settings: React.FC<SettingsProps> = ({
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [dentistSavedMessage, setDentistSavedMessage] = useState(false);
+
+  // Estado local para Backup
+  const [restoreSuccessMessage, setRestoreSuccessMessage] = useState(false);
+  const [restoreErrorMessage, setRestoreErrorMessage] = useState('');
 
   const handleSaveClinicSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +86,60 @@ export const Settings: React.FC<SettingsProps> = ({
     setTimeout(() => setDentistSavedMessage(false), 3000);
   };
 
+  // Handler para Descargar Backup a la PC del cliente
+  const handleDownloadBackup = () => {
+    const fullData = {
+      version: '1.1.0',
+      exportDate: new Date().toISOString(),
+      clinicInfo: {
+        name: clinicName,
+        address: clinicAddress,
+        phone: clinicPhone
+      },
+      dentists,
+      patients,
+      appointments,
+      budgets
+    };
+
+    const jsonStr = JSON.stringify(fullData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `backup-odontomerlo-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Handler para Cargar y Restaurar Backup desde la PC del cliente
+  const handleFileUploadRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsedData = JSON.parse(event.target?.result as string);
+        if (!parsedData.clinicInfo || !parsedData.patients) {
+          throw new Error('El archivo no contiene un formato de copia de seguridad válido.');
+        }
+        onRestoreBackupData(parsedData);
+        if (parsedData.clinicInfo.name) setTempClinicName(parsedData.clinicInfo.name);
+        if (parsedData.clinicInfo.address) setTempAddress(parsedData.clinicInfo.address);
+        if (parsedData.clinicInfo.phone) setTempPhone(parsedData.clinicInfo.phone);
+
+        setRestoreSuccessMessage(true);
+        setTimeout(() => setRestoreSuccessMessage(false), 4000);
+      } catch (err: any) {
+        setRestoreErrorMessage(err.message || 'Error al leer el archivo de backup.');
+        setTimeout(() => setRestoreErrorMessage(''), 4000);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       
@@ -84,16 +150,16 @@ export const Settings: React.FC<SettingsProps> = ({
             <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
               ⚙️
             </div>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Configuración del Consultorio</h2>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Configuración del Consultorio & Respaldos</h2>
           </div>
           <p className="text-slate-500 text-xs mt-1">
-            Administra el nombre de la clínica y da de alta los profesionales odontólogos del staff.
+            Administra los datos de la clínica, los odontólogos habilitados y realiza copias de seguridad locales.
           </p>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
           <Sparkles className="w-4 h-4 text-teal-600" />
-          <span>Configuración Profesional</span>
+          <span>Configuración Profesional v1.1</span>
         </div>
       </div>
 
@@ -256,7 +322,87 @@ export const Settings: React.FC<SettingsProps> = ({
 
       </div>
 
-      {/* SECCIÓN 3: LISTADO Y ESTADO DE ODONTÓLOGOS DEL STAFF */}
+      {/* SECCIÓN 3: COPIA DE SEGURIDAD Y RESTAURACIÓN LOCAL (PC DEL CLIENTE) */}
+      <div className="bg-slate-900 text-slate-100 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold border border-teal-500/30">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                3. Copia de Seguridad & Respaldos (PC Local del Cliente)
+                <span className="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  100% Seguro 🛡️
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">Descarga un archivo con toda tu información a tu computadora o restaura un backup previo.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Opción A: Descargar Backup */}
+          <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center space-x-2 text-teal-400 font-bold text-sm mb-2">
+                <Download className="w-4 h-4" />
+                <span>A. Descargar Copia de Seguridad a tu Computadora</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Descarga un archivo seguro conteniendo la lista de pacientes, odontogramas, fotos, radiografías, turnos y presupuestos.
+              </p>
+            </div>
+
+            <button
+              onClick={handleDownloadBackup}
+              className="w-full py-3 bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-400 hover:to-sky-400 text-slate-950 font-extrabold text-xs rounded-xl transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Descargar Backup Ahora (.json)</span>
+            </button>
+          </div>
+
+          {/* Opción B: Restaurar Backup */}
+          <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center space-x-2 text-sky-400 font-bold text-sm mb-2">
+                <RefreshCw className="w-4 h-4" />
+                <span>B. Restaurar Datos desde un Backup Previo</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Selecciona un archivo de backup previamente descargado (`.json`) para recuperar instantáneamente todos tus datos.
+              </p>
+            </div>
+
+            <div>
+              <label className="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-extrabold text-xs rounded-xl cursor-pointer flex items-center justify-center space-x-2 transition-all">
+                <Upload className="w-4 h-4 text-sky-400" />
+                <span>Seleccionar y Restaurar Backup</span>
+                <input type="file" accept=".json" onChange={handleFileUploadRestore} className="hidden" />
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        {restoreSuccessMessage && (
+          <div className="p-4 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl flex items-center gap-2 animate-fade-in">
+            <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>¡Copia de seguridad restaurada exitosamente! Todos los pacientes, turnos e historias clínicas han sido recuperados.</span>
+          </div>
+        )}
+
+        {restoreErrorMessage && (
+          <div className="p-4 bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold rounded-xl flex items-center gap-2 animate-fade-in">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <span>{restoreErrorMessage}</span>
+          </div>
+        )}
+      </div>
+
+      {/* SECCIÓN 4: LISTADO Y ESTADO DE ODONTÓLOGOS DEL STAFF */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
           <div className="flex items-center space-x-3">

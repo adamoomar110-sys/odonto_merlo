@@ -83,6 +83,22 @@ export const App: React.FC = () => {
     setDentists(prev => prev.filter(d => d.id !== id));
   };
 
+  // Handler para Restaurar Backup Completo
+  const handleRestoreBackupData = (backupData: any) => {
+    if (backupData.clinicInfo) {
+      if (backupData.clinicInfo.name) setClinicName(backupData.clinicInfo.name);
+      if (backupData.clinicInfo.address) setClinicAddress(backupData.clinicInfo.address);
+      if (backupData.clinicInfo.phone) setClinicPhone(backupData.clinicInfo.phone);
+    }
+    if (Array.isArray(backupData.dentists)) setDentists(backupData.dentists);
+    if (Array.isArray(backupData.patients)) {
+      setPatients(backupData.patients);
+      if (backupData.patients.length > 0) setSelectedPatientId(backupData.patients[0].id);
+    }
+    if (Array.isArray(backupData.appointments)) setAppointments(backupData.appointments);
+    if (Array.isArray(backupData.budgets)) setBudgets(backupData.budgets);
+  };
+
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === todayStr);
 
@@ -208,6 +224,10 @@ export const App: React.FC = () => {
             onAddDentist={handleAddDentist}
             onToggleDentistStatus={handleToggleDentistStatus}
             onDeleteDentist={handleDeleteDentist}
+            patients={patients}
+            appointments={appointments}
+            budgets={budgets}
+            onRestoreBackupData={handleRestoreBackupData}
           />
         )}
 
