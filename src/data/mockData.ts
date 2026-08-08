@@ -9,14 +9,23 @@ export const CONDITION_METAS: Record<string, ConditionMeta> = {
     textClass: 'text-slate-700',
     description: 'Pieza dental sin patologías'
   },
-  caries: {
-    id: 'caries',
-    label: 'Caries',
+  caries_np: {
+    id: 'caries_np',
+    label: 'Caries No Penetrante (NP)',
     color: '#ef4444',
     bgClass: 'bg-red-100',
     textClass: 'text-red-700',
-    description: 'Lesión cariosa (Rojo)',
-    symbol: '🔴'
+    description: 'Lesión cariosa no penetrante (Rojo - NP)',
+    symbol: 'NP'
+  },
+  caries_p: {
+    id: 'caries_p',
+    label: 'Caries Penetrante (P)',
+    color: '#dc2626',
+    bgClass: 'bg-red-200',
+    textClass: 'text-red-900',
+    description: 'Lesión cariosa penetrante (Rojo - P)',
+    symbol: 'P'
   },
   obturado: {
     id: 'obturado',
@@ -80,6 +89,15 @@ export const CONDITION_METAS: Record<string, ConditionMeta> = {
     textClass: 'text-blue-700',
     description: 'Pieza extraída previamente (Cruz Azul ❌)',
     symbol: '❌'
+  },
+  puente: {
+    id: 'puente',
+    label: 'Puente Fijo',
+    color: '#2563eb',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: 'Prótesis fija / Puente (Haz clic en pilar 1 y luego en pilar 2)',
+    symbol: '🌉'
   }
 };
 
@@ -114,8 +132,8 @@ export const INITIAL_PATIENTS: Patient[] = [
     },
     notes: 'Paciente con sensibilidad en premolares superiores.',
     odontogramFindings: [
-      { id: 'f-1', toothNumber: 16, surface: 'oclusal', condition: 'caries', date: '2026-07-15', notes: 'Caries oclusal Grado II' },
-      { id: 'f-2', toothNumber: 16, surface: 'mesial', condition: 'caries', date: '2026-07-15', notes: 'Mancha cariosa' },
+      { id: 'f-1', toothNumber: 16, surface: 'oclusal', condition: 'caries_np', date: '2026-07-15', notes: 'Caries oclusal Grado II' },
+      { id: 'f-2', toothNumber: 16, surface: 'mesial', condition: 'caries_np', date: '2026-07-15', notes: 'Mancha cariosa' },
       { id: 'f-3', toothNumber: 24, surface: 'oclusal', condition: 'obturado', date: '2026-05-10', notes: 'Composite estético' },
       { id: 'f-4', toothNumber: 36, surface: 'pieza', condition: 'endodoncia', date: '2026-03-20', notes: 'Conducto rematado en 3 conductos' },
       { id: 'f-5', toothNumber: 46, surface: 'pieza', condition: 'ausente', date: '2025-11-04', notes: 'Exodoncia antigua' },
@@ -184,8 +202,8 @@ export const INITIAL_PATIENTS: Patient[] = [
     allergies: 'Aspirina',
     notes: 'Evaluación para limpieza ultrasónica y blanqueamiento.',
     odontogramFindings: [
-      { id: 'f-11', toothNumber: 47, surface: 'oclusal', condition: 'caries', date: '2026-07-28' },
-      { id: 'f-12', toothNumber: 37, surface: 'oclusal', condition: 'caries', date: '2026-07-28' }
+      { id: 'f-11', toothNumber: 47, surface: 'oclusal', condition: 'caries_np', date: '2026-07-28' },
+      { id: 'f-12', toothNumber: 37, surface: 'oclusal', condition: 'caries_np', date: '2026-07-28' }
     ]
   }
 ];

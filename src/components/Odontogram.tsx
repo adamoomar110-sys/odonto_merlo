@@ -21,29 +21,92 @@ const PRIMARY_LOWER_RIGHT = [85, 84, 83, 82, 81];
 const PRIMARY_LOWER_LEFT  = [71, 72, 73, 74, 75];
 
 export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFindings }) => {
-  const [selectedCondition, setSelectedCondition] = useState<ConditionType>('caries');
+  const [selectedCondition, setSelectedCondition] = useState<ConditionType>('caries_np');
   const [selectedTooth, setSelectedTooth] = useState<number | null>(16);
   const [isPrimaryTeethView, setIsPrimaryTeethView] = useState<boolean>(false);
   const [notesInput, setNotesInput] = useState<string>('');
+  const [bridgeStartTooth, setBridgeStartTooth] = useState<number | null>(null);
 
   const findings = patient.odontogramFindings || [];
+
+  const ARCH_SEQUENCES = [
+    [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28],
+    [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38],
+    [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
+    [85, 84, 83, 82, 81, 71, 72, 73, 74, 75]
+  ];
 
   // Helper to find condition for a tooth surface
   const getFindingForSurface = (toothNum: number, surface: ToothSurface) => {
     return findings.find(f => f.toothNumber === toothNum && f.surface === surface);
   };
 
-  // Helper to find tooth-level condition (ausente, extraido, endodoncia, corona, extraccion_indicada)
+  // Helper to find tooth-level condition (ausente, extraido, endodoncia, corona, extraccion_indicada, puente)
   const getToothLevelFinding = (toothNum: number) => {
     return findings.find(f => f.toothNumber === toothNum && (
       f.surface === 'pieza' || 
-      ['ausente', 'extraido', 'corona', 'endodoncia', 'extraccion_indicada'].includes(f.condition)
+      ['ausente', 'extraido', 'corona', 'endodoncia', 'extraccion_indicada', 'puente'].includes(f.condition)
     ));
   };
 
   const handleSurfaceClick = (toothNum: number, surface: ToothSurface, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedTooth(toothNum);
+
+    // Handling Puente Fijo (Method 1: Start Pillar to End Pillar selection)
+    if (selectedCondition === 'puente') {
+      if (bridgeStartTooth === null) {
+        setBridgeStartTooth(toothNum);
+      } else {
+        const startNum = bridgeStartTooth;
+        const endNum = toothNum;
+        setBridgeStartTooth(null);
+
+        if (startNum === endNum) return;
+
+        const seq = ARCH_SEQUENCES.find(s => s.includes(startNum) && s.includes(endNum));
+        if (!seq) {
+          alert("Para crear un puente fijo, ambas piezas deben estar en la misma arcada.");
+          return;
+        }
+
+        const idx1 = seq.indexOf(startNum);
+        const idx2 = seq.indexOf(endNum);
+        const minIdx = Math.min(idx1, idx2);
+        const maxIdx = Math.max(idx1, idx2);
+
+        const bridgeTeeth = seq.slice(minIdx, maxIdx + 1);
+        const p1 = seq[minIdx];
+        const p2 = seq[maxIdx];
+
+        // Remove existing findings for these teeth
+        let updated = findings.filter(f => !bridgeTeeth.includes(f.toothNumber));
+        const today = new Date().toISOString().split('T')[0];
+
+        const bridgeFindingsToAdd: ToothFinding[] = bridgeTeeth.map(tNum => {
+          const isPilar = tNum === p1 || tNum === p2;
+          return {
+            id: 'find-bridge-' + tNum + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+            toothNumber: tNum,
+            surface: 'pieza',
+            condition: 'puente',
+            date: today,
+            bridgeStart: p1,
+            bridgeEnd: p2,
+            bridgeRole: isPilar ? 'pilar' : 'pontico',
+            notes: isPilar 
+              ? `Puente Fijo (Pilar #${p1} a #${p2})` 
+              : `Puente Fijo (Póntico Intermedio #${p1} a #${p2})`
+          };
+        });
+
+        onUpdateFindings(patient.id, [...updated, ...bridgeFindingsToAdd]);
+      }
+      return;
+    }
+
+    // Reset bridge selection if selecting other conditions
+    if (bridgeStartTooth !== null) setBridgeStartTooth(null);
 
     // If selecting tooth-level condition, apply to whole tooth ('pieza')
     let targetSurface: ToothSurface = surface;
@@ -100,6 +163,11 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
     const isCorona = toothLevel?.condition === 'corona';
     const isEndodoncia = toothLevel?.condition === 'endodoncia';
     const isExtraccionIndicada = toothLevel?.condition === 'extraccion_indicada';
+    const isPuente = toothLevel?.condition === 'puente';
+    const bridgeRole = toothLevel?.bridgeRole || (toothNum === toothLevel?.bridgeStart || toothNum === toothLevel?.bridgeEnd ? 'pilar' : 'pontico');
+    const isBridgePilar = isPuente && bridgeRole === 'pilar';
+    const isBridgePontico = isPuente && bridgeRole === 'pontico';
+    const isBridgePendingStart = selectedCondition === 'puente' && bridgeStartTooth === toothNum;
 
     return (
       <div 
@@ -111,8 +179,9 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
             : 'hover:bg-slate-100 hover:scale-102'
         }`}
       >
-        <span className="text-xs font-extrabold text-slate-600 mb-1 tracking-wider">
+        <span className="text-xs font-extrabold text-slate-600 mb-1 tracking-wider flex items-center gap-1">
           {toothNum}
+          {isPuente && <span className="text-[10px] text-blue-600">🌉</span>}
         </span>
 
         {/* Tooth SVG Diagram (5 interactive surfaces) */}
@@ -181,6 +250,11 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
               <title>Diente {toothNum} - Oclusal / Incisal</title>
             </polygon>
 
+            {/* Overlay: Pending Bridge Selection Highlight */}
+            {isBridgePendingStart && (
+              <rect x="4" y="4" width="92" height="92" rx="10" fill="none" stroke="#2563eb" strokeWidth="8" className="animate-pulse" />
+            )}
+
             {/* Overlay: Corona (Blue Ring) */}
             {isCorona && (
               <rect x="6" y="6" width="88" height="88" rx="8" fill="none" stroke="#2563eb" strokeWidth="7" strokeDasharray="6 3" />
@@ -215,6 +289,26 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
               <g>
                 <line x1="10" y1="10" x2="90" y2="90" stroke="#2563eb" strokeWidth="10" strokeLinecap="round" />
                 <line x1="90" y1="10" x2="10" y2="90" stroke="#2563eb" strokeWidth="10" strokeLinecap="round" />
+              </g>
+            )}
+
+            {/* Overlay: Puente Fijo Pilar (Crown Outline + Top Bridge Post) */}
+            {isBridgePilar && (
+              <g>
+                <rect x="6" y="6" width="88" height="88" rx="8" fill="none" stroke="#2563eb" strokeWidth="7" strokeDasharray="6 3" />
+                <rect x="0" y="0" width="100" height="12" fill="#2563eb" />
+                <line x1="50" y1="0" x2="50" y2="24" stroke="#2563eb" strokeWidth="10" />
+                <circle cx="50" cy="24" r="7" fill="#2563eb" />
+              </g>
+            )}
+
+            {/* Overlay: Puente Fijo Póntico (Red Ausente Cross + Blue Top Connecting Bar) */}
+            {isBridgePontico && (
+              <g>
+                <line x1="15" y1="20" x2="85" y2="90" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+                <line x1="85" y1="20" x2="15" y2="90" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+                <rect x="0" y="0" width="100" height="12" fill="#2563eb" />
+                <line x1="0" y1="6" x2="100" y2="6" stroke="#1d4ed8" strokeWidth="4" />
               </g>
             )}
           </svg>
@@ -274,7 +368,7 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
           Herramienta de Diagnóstico Clínico (Haz clic en una condición y luego en la superficie dental):
         </h3>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2">
           {Object.values(CONDITION_METAS).map((cond) => {
             const isActive = selectedCondition === cond.id;
             return (
@@ -311,6 +405,28 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
             );
           })}
         </div>
+
+        {/* Banner de Instrucciones para Modo Puente Fijo */}
+        {selectedCondition === 'puente' && (
+          <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-blue-800 text-xs font-medium animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🌉</span>
+              {bridgeStartTooth === null ? (
+                <span><strong>Modo Puente Fijo Activo:</strong> Haz clic en la <u>Pieza Pilar 1</u> (primer diente del puente).</span>
+              ) : (
+                <span><strong>Pilar 1 seleccionado (#{bridgeStartTooth}):</strong> Ahora haz clic en la <u>Pieza Pilar 2</u> (último diente del puente) para enlazar el tramo.</span>
+              )}
+            </div>
+            {bridgeStartTooth !== null && (
+              <button 
+                onClick={() => setBridgeStartTooth(null)} 
+                className="px-2.5 py-1 bg-blue-200 hover:bg-blue-300 rounded-lg font-bold text-blue-900 transition"
+              >
+                Cancelar Selección
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Odontograma Visual (Cuadrantes FDI) */}

@@ -2,14 +2,16 @@ export type ToothSurface = 'vestibular' | 'lingual' | 'mesial' | 'distal' | 'ocl
 
 export type ConditionType = 
   | 'sano'
-  | 'caries' 
+  | 'caries_np'
+  | 'caries_p' 
   | 'obturado' 
   | 'endodoncia' 
   | 'ausente' 
   | 'extraido'
   | 'corona' 
   | 'sellador' 
-  | 'extraccion_indicada';
+  | 'extraccion_indicada'
+  | 'puente';
 
 export interface ConditionMeta {
   id: ConditionType;
@@ -29,6 +31,9 @@ export interface ToothFinding {
   date: string;
   dentistName?: string;
   notes?: string;
+  bridgeStart?: number;
+  bridgeEnd?: number;
+  bridgeRole?: 'pilar' | 'pontico';
 }
 
 export interface DentalXRay {
