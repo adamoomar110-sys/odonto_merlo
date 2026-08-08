@@ -6,6 +6,7 @@ export type ConditionType =
   | 'obturado' 
   | 'endodoncia' 
   | 'ausente' 
+  | 'extraido'
   | 'corona' 
   | 'sellador' 
   | 'extraccion_indicada';

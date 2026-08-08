@@ -33,18 +33,21 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
     return findings.find(f => f.toothNumber === toothNum && f.surface === surface);
   };
 
-  // Helper to find tooth-level condition (ausente, endodoncia, corona)
+  // Helper to find tooth-level condition (ausente, extraido, endodoncia, corona, extraccion_indicada)
   const getToothLevelFinding = (toothNum: number) => {
-    return findings.find(f => f.toothNumber === toothNum && (f.surface === 'pieza' || f.condition === 'ausente' || f.condition === 'corona' || f.condition === 'endodoncia'));
+    return findings.find(f => f.toothNumber === toothNum && (
+      f.surface === 'pieza' || 
+      ['ausente', 'extraido', 'corona', 'endodoncia', 'extraccion_indicada'].includes(f.condition)
+    ));
   };
 
   const handleSurfaceClick = (toothNum: number, surface: ToothSurface, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedTooth(toothNum);
 
-    // If selecting 'ausente', 'corona', or 'endodoncia', apply to whole tooth
+    // If selecting tooth-level condition, apply to whole tooth ('pieza')
     let targetSurface: ToothSurface = surface;
-    if (['ausente', 'corona', 'endodoncia'].includes(selectedCondition)) {
+    if (['ausente', 'extraido', 'corona', 'endodoncia', 'extraccion_indicada'].includes(selectedCondition)) {
       targetSurface = 'pieza';
     }
 
@@ -62,7 +65,7 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
         surface: targetSurface,
         condition: selectedCondition,
         date: new Date().toISOString().split('T')[0],
-        notes: notesInput || CONDITION_METAS[selectedCondition].label
+        notes: notesInput || CONDITION_METAS[selectedCondition]?.label || ''
       };
 
       if (existingIndex >= 0) {
@@ -93,8 +96,10 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
     const toothLevel = getToothLevelFinding(toothNum);
     const isSelected = selectedTooth === toothNum;
     const isAusente = toothLevel?.condition === 'ausente';
+    const isExtraido = toothLevel?.condition === 'extraido';
     const isCorona = toothLevel?.condition === 'corona';
     const isEndodoncia = toothLevel?.condition === 'endodoncia';
+    const isExtraccionIndicada = toothLevel?.condition === 'extraccion_indicada';
 
     return (
       <div 
@@ -176,24 +181,40 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
               <title>Diente {toothNum} - Oclusal / Incisal</title>
             </polygon>
 
-            {/* Overlay: Corona (Golden Ring) */}
+            {/* Overlay: Corona (Blue Ring) */}
             {isCorona && (
-              <rect x="6" y="6" width="88" height="88" rx="8" fill="none" stroke="#f59e0b" strokeWidth="7" strokeDasharray="6 3" />
+              <rect x="6" y="6" width="88" height="88" rx="8" fill="none" stroke="#2563eb" strokeWidth="7" strokeDasharray="6 3" />
             )}
 
-            {/* Overlay: Endodoncia (Vertical Line through root) */}
+            {/* Overlay: Endodoncia (Vertical Line through root - Blue) */}
             {isEndodoncia && (
               <g>
-                <line x1="50" y1="0" x2="50" y2="100" stroke="#8b5cf6" strokeWidth="9" />
-                <circle cx="50" cy="50" r="10" fill="#8b5cf6" />
+                <line x1="50" y1="0" x2="50" y2="100" stroke="#2563eb" strokeWidth="9" />
+                <circle cx="50" cy="50" r="10" fill="#2563eb" />
               </g>
             )}
 
-            {/* Overlay: Ausente / Exodoncia (Big Red/Black Cross) */}
+            {/* Overlay: Extracción Indicada (2 parallel horizontal lines in RED) */}
+            {isExtraccionIndicada && (
+              <g>
+                <line x1="6" y1="36" x2="94" y2="36" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+                <line x1="6" y1="64" x2="94" y2="64" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+              </g>
+            )}
+
+            {/* Overlay: Diente Ausente (RED Cross X) */}
             {isAusente && (
               <g>
                 <line x1="10" y1="10" x2="90" y2="90" stroke="#dc2626" strokeWidth="10" strokeLinecap="round" />
                 <line x1="90" y1="10" x2="10" y2="90" stroke="#dc2626" strokeWidth="10" strokeLinecap="round" />
+              </g>
+            )}
+
+            {/* Overlay: Diente Extraído (BLUE Cross X) */}
+            {isExtraido && (
+              <g>
+                <line x1="10" y1="10" x2="90" y2="90" stroke="#2563eb" strokeWidth="10" strokeLinecap="round" />
+                <line x1="90" y1="10" x2="10" y2="90" stroke="#2563eb" strokeWidth="10" strokeLinecap="round" />
               </g>
             )}
           </svg>
@@ -253,7 +274,7 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
           Herramienta de Diagnóstico Clínico (Haz clic en una condición y luego en la superficie dental):
         </h3>
         
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
           {Object.values(CONDITION_METAS).map((cond) => {
             const isActive = selectedCondition === cond.id;
             return (
@@ -267,10 +288,25 @@ export const Odontogram: React.FC<OdontogramProps> = ({ patient, onUpdateFinding
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="w-4 h-4 rounded-full border border-slate-400 shadow-inner" style={{ backgroundColor: cond.color }}></span>
-                  {cond.symbol && <span className="text-xs">{cond.symbol}</span>}
+                  <span className="w-4 h-4 rounded-full border border-slate-300 shadow-inner flex items-center justify-center text-[10px]" style={{ backgroundColor: cond.color }}>
+                    {cond.id === 'extraccion_indicada' && (
+                      <span className="font-extrabold text-white text-[10px] leading-none">=</span>
+                    )}
+                  </span>
+                  {cond.id === 'extraccion_indicada' ? (
+                    <span className="text-xs font-bold text-red-600 flex flex-col justify-center gap-0.5" title="2 Líneas Horizontales Rojas">
+                      <span className="w-3.5 h-[2px] bg-red-600 rounded-full block"></span>
+                      <span className="w-3.5 h-[2px] bg-red-600 rounded-full block"></span>
+                    </span>
+                  ) : cond.id === 'ausente' ? (
+                    <span className="text-xs font-bold text-red-600">❌</span>
+                  ) : cond.id === 'extraido' ? (
+                    <span className="text-xs font-bold text-blue-600">❌</span>
+                  ) : cond.symbol ? (
+                    <span className="text-xs">{cond.symbol}</span>
+                  ) : null}
                 </div>
-                <span className="text-xs font-bold text-slate-800 line-clamp-1">{cond.label}</span>
+                <span className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight">{cond.label}</span>
               </button>
             );
           })}

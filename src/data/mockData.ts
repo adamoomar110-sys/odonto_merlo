@@ -15,7 +15,7 @@ export const CONDITION_METAS: Record<string, ConditionMeta> = {
     color: '#ef4444',
     bgClass: 'bg-red-100',
     textClass: 'text-red-700',
-    description: 'Lesión cariosa (Marcado oficial en Rojo)',
+    description: 'Lesión cariosa (Rojo)',
     symbol: '🔴'
   },
   obturado: {
@@ -30,47 +30,56 @@ export const CONDITION_METAS: Record<string, ConditionMeta> = {
   endodoncia: {
     id: 'endodoncia',
     label: 'Tratamiento de Conducto',
-    color: '#8b5cf6',
-    bgClass: 'bg-purple-100',
-    textClass: 'text-purple-700',
-    description: 'Endodoncia / Conducto realizado (Violeta)',
-    symbol: '🟣'
-  },
-  ausente: {
-    id: 'ausente',
-    label: 'Pieza Ausente / Exodoncia',
-    color: '#64748b',
-    bgClass: 'bg-slate-200',
-    textClass: 'text-slate-800',
-    description: 'Diente faltante o extraído (Marcado en Cruz ❌)',
-    symbol: '❌'
+    color: '#3b82f6',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: 'Endodoncia / Conducto realizado (Azul)',
+    symbol: '🔵'
   },
   corona: {
     id: 'corona',
     label: 'Corona / Prótesis',
-    color: '#f59e0b',
-    bgClass: 'bg-amber-100',
-    textClass: 'text-amber-800',
-    description: 'Corona fija o incrustación (Amarillo/Dorado)',
+    color: '#3b82f6',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: 'Corona fija o incrustación (Azul)',
     symbol: '👑'
   },
   sellador: {
     id: 'sellador',
     label: 'Sellador de Fosas',
-    color: '#10b981',
-    bgClass: 'bg-emerald-100',
-    textClass: 'text-emerald-800',
-    description: 'Sellador preventivo (Verde)',
-    symbol: '🟢'
+    color: '#3b82f6',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: 'Sellador preventivo (Azul)',
+    symbol: '🔵'
   },
   extraccion_indicada: {
     id: 'extraccion_indicada',
     label: 'Extracción Indicada',
     color: '#dc2626',
-    bgClass: 'bg-red-200',
-    textClass: 'text-red-900',
-    description: 'Pieza con indicación de exodoncia',
-    symbol: '⚠️'
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-700',
+    description: 'Pieza con indicación de exodoncia (2 líneas paralelas horizontales rojas)',
+    symbol: '═'
+  },
+  ausente: {
+    id: 'ausente',
+    label: 'Diente Ausente',
+    color: '#dc2626',
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-700',
+    description: 'Diente ausente (Cruz Roja ❌)',
+    symbol: '❌'
+  },
+  extraido: {
+    id: 'extraido',
+    label: 'Diente Extraído',
+    color: '#2563eb',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: 'Pieza extraída previamente (Cruz Azul ❌)',
+    symbol: '❌'
   }
 };
 
