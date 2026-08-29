@@ -149,7 +149,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
                             : 'bg-slate-900/60 text-slate-500 border-slate-800'
                         }`}
                       >
-                        {ds.label}: {ds.isOpen ? `${ds.startTime} a ${ds.endTime} hs` : 'Cerrado'}
+                        {ds.label}: {ds.isOpen ? (ds.hasSplitShift ? `${ds.startTime} a ${ds.endTime} / ${ds.startTime2 || '16:00'} a ${ds.endTime2 || '20:00'} hs` : `${ds.startTime} a ${ds.endTime} hs`) : 'Cerrado'}
                       </span>
                     );
                   })}
@@ -186,7 +186,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider">Fecha del Turno:</label>
                 <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${isDayOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
-                  {currentDaySchedule?.label}: {isDayOpen ? `Abierto (${currentDaySchedule?.startTime} - ${currentDaySchedule?.endTime} hs)` : 'Cerrado'}
+                  {currentDaySchedule?.label}: {isDayOpen ? (currentDaySchedule?.hasSplitShift ? `Abierto (${currentDaySchedule?.startTime}-${currentDaySchedule?.endTime} / ${currentDaySchedule?.startTime2}-${currentDaySchedule?.endTime2} hs)` : `Abierto (${currentDaySchedule?.startTime}-${currentDaySchedule?.endTime} hs)`) : 'Cerrado'}
                 </span>
               </div>
               

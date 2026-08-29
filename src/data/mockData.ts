@@ -451,13 +451,13 @@ export const INITIAL_BUDGETS: Budget[] = [
 ];
 
 export const DEFAULT_CLINIC_SCHEDULE: ClinicScheduleConfig = {
-  lunes:     { day: 'lunes',     label: 'Lunes',     isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
-  martes:    { day: 'martes',    label: 'Martes',    isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
-  miercoles: { day: 'miercoles', label: 'Miércoles', isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
-  jueves:    { day: 'jueves',    label: 'Jueves',    isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
-  viernes:   { day: 'viernes',   label: 'Viernes',   isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
-  sabado:    { day: 'sabado',    label: 'Sábado',    isOpen: true,  startTime: '09:00', endTime: '14:00', slotDurationMinutes: 30 },
-  domingo:   { day: 'domingo',   label: 'Domingo',   isOpen: false, startTime: '09:00', endTime: '13:00', slotDurationMinutes: 30 }
+  lunes:     { day: 'lunes',     label: 'Lunes',     isOpen: true,  startTime: '08:00', endTime: '13:00', hasSplitShift: true, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  martes:    { day: 'martes',    label: 'Martes',    isOpen: true,  startTime: '08:00', endTime: '13:00', hasSplitShift: true, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  miercoles: { day: 'miercoles', label: 'Miércoles', isOpen: true,  startTime: '08:00', endTime: '13:00', hasSplitShift: true, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  jueves:    { day: 'jueves',    label: 'Jueves',    isOpen: true,  startTime: '08:00', endTime: '13:00', hasSplitShift: true, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  viernes:   { day: 'viernes',   label: 'Viernes',   isOpen: true,  startTime: '08:00', endTime: '13:00', hasSplitShift: true, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  sabado:    { day: 'sabado',    label: 'Sábado',    isOpen: true,  startTime: '09:00', endTime: '14:00', hasSplitShift: false, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 },
+  domingo:   { day: 'domingo',   label: 'Domingo',   isOpen: false, startTime: '09:00', endTime: '13:00', hasSplitShift: false, startTime2: '16:00', endTime2: '20:00', slotDurationMinutes: 30 }
 };
 
 export const getDayOfWeekKey = (dateStr: string): DayOfWeek => {
@@ -475,21 +475,34 @@ export const generateTimeSlotsFromSchedule = (scheduleConfig: ClinicScheduleConf
   const daySched = scheduleConfig?.[dayKey];
   if (!daySched || !daySched.isOpen) return [];
 
-  const [startH, startM] = (daySched.startTime || '08:00').split(':').map(Number);
-  const [endH, endM] = (daySched.endTime || '20:00').split(':').map(Number);
   const step = daySched.slotDurationMinutes || 30;
-
   const slots: string[] = [];
-  let currentMinutes = startH * 60 + startM;
-  const endMinutes = endH * 60 + endM;
 
-  while (currentMinutes < endMinutes) {
-    const h = Math.floor(currentMinutes / 60);
-    const m = currentMinutes % 60;
-    const hh = String(h).padStart(2, '0');
-    const mm = String(m).padStart(2, '0');
-    slots.push(`${hh}:${mm}`);
-    currentMinutes += step;
+  const addRangeSlots = (startTimeStr?: string, endTimeStr?: string) => {
+    if (!startTimeStr || !endTimeStr) return;
+    const [startH, startM] = startTimeStr.split(':').map(Number);
+    const [endH, endM] = endTimeStr.split(':').map(Number);
+    if (isNaN(startH) || isNaN(endH)) return;
+
+    let currentMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    while (currentMinutes < endMinutes) {
+      const h = Math.floor(currentMinutes / 60);
+      const m = currentMinutes % 60;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      slots.push(`${hh}:${mm}`);
+      currentMinutes += step;
+    }
+  };
+
+  // Primer Tramo / Mañana
+  addRangeSlots(daySched.startTime, daySched.endTime);
+
+  // Segundo Tramo / Tarde (si tiene horario cortado activo)
+  if (daySched.hasSplitShift && daySched.startTime2 && daySched.endTime2) {
+    addRangeSlots(daySched.startTime2, daySched.endTime2);
   }
 
   return slots;

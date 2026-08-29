@@ -159,8 +159,11 @@ export interface DaySchedule {
   day: DayOfWeek;
   label: string;
   isOpen: boolean;
-  startTime: string; // e.g. '08:00'
-  endTime: string; // e.g. '20:00'
+  startTime: string; // e.g. '08:00' (Primer tramo / Mañana)
+  endTime: string; // e.g. '13:00'
+  hasSplitShift?: boolean; // Habilita horario cortado (corte de almuerzo / re-apertura)
+  startTime2?: string; // e.g. '16:00' (Segundo tramo / Tarde)
+  endTime2?: string; // e.g. '20:00'
   slotDurationMinutes: number; // e.g. 30
 }
 

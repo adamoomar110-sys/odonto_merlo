@@ -300,30 +300,78 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
 
                 {dayData.isOpen ? (
-                  <div className="space-y-2 text-xs">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Apertura:</label>
-                        <input
-                          type="time"
-                          value={dayData.startTime}
-                          onChange={e => handleUpdateDayTime(dayKey, 'startTime', e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Cierre:</label>
-                        <input
-                          type="time"
-                          value={dayData.endTime}
-                          onChange={e => handleUpdateDayTime(dayKey, 'endTime', e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
-                        />
+                  <div className="space-y-2.5 text-xs">
+                    {/* Tramo 1 */}
+                    <div className="bg-white p-2 rounded-lg border border-slate-200 space-y-1">
+                      <span className="text-[10px] font-extrabold text-teal-700 uppercase tracking-wider block">
+                        {dayData.hasSplitShift ? 'Turno Mañana (Tramo 1):' : 'Horario Continuo:'}
+                      </span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Apertura 1:</label>
+                          <input
+                            type="time"
+                            value={dayData.startTime || '08:00'}
+                            onChange={e => handleUpdateDayTime(dayKey, 'startTime', e.target.value)}
+                            className="w-full px-2 py-1 rounded-md border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Cierre 1:</label>
+                          <input
+                            type="time"
+                            value={dayData.endTime || '13:00'}
+                            onChange={e => handleUpdateDayTime(dayKey, 'endTime', e.target.value)}
+                            className="w-full px-2 py-1 rounded-md border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                          />
+                        </div>
                       </div>
                     </div>
 
+                    {/* Checkbox Horario Cortado */}
+                    <label className="flex items-center space-x-2 cursor-pointer bg-teal-50/60 p-2 rounded-lg border border-teal-100 hover:bg-teal-50 transition">
+                      <input
+                        type="checkbox"
+                        checked={dayData.hasSplitShift || false}
+                        onChange={e => handleUpdateDayTime(dayKey, 'hasSplitShift', e.target.checked)}
+                        className="rounded text-teal-600 focus:ring-teal-500 w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] font-extrabold text-teal-900">
+                        ☕ Horario Cortado (Re-apertura Tarde)
+                      </span>
+                    </label>
+
+                    {/* Tramo 2 (Tarde) */}
+                    {dayData.hasSplitShift && (
+                      <div className="bg-amber-50/50 p-2 rounded-lg border border-amber-200/80 space-y-1 animate-fade-in">
+                        <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider block">
+                          Turno Tarde (Tramo 2):
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Re-Apertura:</label>
+                            <input
+                              type="time"
+                              value={dayData.startTime2 || '16:00'}
+                              onChange={e => handleUpdateDayTime(dayKey, 'startTime2', e.target.value)}
+                              className="w-full px-2 py-1 rounded-md border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Cierre Final:</label>
+                            <input
+                              type="time"
+                              value={dayData.endTime2 || '20:00'}
+                              onChange={e => handleUpdateDayTime(dayKey, 'endTime2', e.target.value)}
+                              className="w-full px-2 py-1 rounded-md border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Frecuencia / Duración:</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Duración del Turno:</label>
                       <select
                         value={dayData.slotDurationMinutes}
                         onChange={e => handleUpdateDayTime(dayKey, 'slotDurationMinutes', Number(e.target.value))}
