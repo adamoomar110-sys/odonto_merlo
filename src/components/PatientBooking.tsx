@@ -1,20 +1,33 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus } from 'lucide-react';
-import { Appointment } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus, XCircle } from 'lucide-react';
+import { Appointment, ClinicScheduleConfig, DayOfWeek } from '../types';
+import { DEFAULT_CLINIC_SCHEDULE, getDayOfWeekKey, generateTimeSlotsFromSchedule } from '../data/mockData';
 
 interface PatientBookingProps {
   onBackToMenu: () => void;
   onAddAppointment: (appointment: Appointment) => void;
   onTriggerTicket?: (appointment: Appointment) => void;
+  clinicSchedule?: ClinicScheduleConfig;
 }
 
-export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, onAddAppointment, onTriggerTicket }) => {
+export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, onAddAppointment, onTriggerTicket, clinicSchedule }) => {
   const [step, setStep] = useState<'schedule' | 'details' | 'payment' | 'confirmed'>('schedule');
   
   // Selección de fecha y turno
   const [selectedSpecialty, setSelectedSpecialty] = useState('Consulta General & Diagnóstico');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedTime, setSelectedTime] = useState('10:00');
+
+  const activeSchedule = clinicSchedule || DEFAULT_CLINIC_SCHEDULE;
+  const currentDayKey = getDayOfWeekKey(selectedDate);
+  const currentDaySchedule = activeSchedule[currentDayKey];
+  const isDayOpen = currentDaySchedule?.isOpen ?? true;
+
+  const availableTimeSlots = useMemo(() => {
+    if (!isDayOpen) return [];
+    return generateTimeSlotsFromSchedule(activeSchedule, selectedDate);
+  }, [activeSchedule, selectedDate, isDayOpen]);
+
+  const [selectedTime, setSelectedTime] = useState(availableTimeSlots[0] || '10:00');
 
   // Datos del paciente
   const [nombre, setNombre] = useState('');
@@ -110,10 +123,38 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
         {/* PASO 1: SELECCIÓN DE FECHA Y HORARIO */}
         {step === 'schedule' && (
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl animate-fade-in">
-            <div className="mb-6">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-sky-400">Paso 1 de 3</span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">Selecciona tu Turno</h2>
-              <p className="text-slate-400 text-sm mt-1">Elige la especialidad y el horario que más te convenga.</p>
+            <div className="mb-6 space-y-4">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-widest text-sky-400">Paso 1 de 3</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">Selecciona tu Turno</h2>
+                <p className="text-slate-400 text-sm mt-1">Elige la especialidad y el horario que más te convenga.</p>
+              </div>
+
+              {/* Banner Horarios de Atención del Consultorio */}
+              <div className="bg-slate-950/80 border border-teal-500/30 rounded-2xl p-4 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-extrabold text-teal-300 uppercase tracking-wider text-[11px]">
+                  <Clock className="w-4 h-4 text-teal-400" />
+                  <span>Días y Horarios de Atención del Consultorio:</span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as DayOfWeek[]).map(dk => {
+                    const ds = activeSchedule[dk];
+                    if (!ds) return null;
+                    return (
+                      <span
+                        key={dk}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+                          ds.isOpen
+                            ? 'bg-teal-950/60 text-teal-200 border-teal-500/30'
+                            : 'bg-slate-900/60 text-slate-500 border-slate-800'
+                        }`}
+                      >
+                        {ds.label}: {ds.isOpen ? `${ds.startTime} a ${ds.endTime} hs` : 'Cerrado'}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Especialidades */}
@@ -142,42 +183,81 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
 
             {/* Fecha */}
             <div className="mb-6">
-              <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider mb-2">Fecha del Turno:</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider">Fecha del Turno:</label>
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${isDayOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                  {currentDaySchedule?.label}: {isDayOpen ? `Abierto (${currentDaySchedule?.startTime} - ${currentDaySchedule?.endTime} hs)` : 'Cerrado'}
+                </span>
+              </div>
+              
               <div className="relative">
                 <input
                   type="date"
                   value={selectedDate}
                   min={new Date().toISOString().split('T')[0]}
-                  onChange={e => setSelectedDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-bold text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  onChange={e => {
+                    const newDate = e.target.value;
+                    setSelectedDate(newDate);
+                    const newSlots = generateTimeSlotsFromSchedule(activeSchedule, newDate);
+                    if (newSlots.length > 0) {
+                      setSelectedTime(newSlots[0]);
+                    }
+                  }}
+                  className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-white font-bold text-sm focus:outline-none ${
+                    isDayOpen ? 'border-slate-800 focus:border-sky-500' : 'border-red-500/60 ring-2 ring-red-500/20'
+                  }`}
                 />
               </div>
+
+              {!isDayOpen && (
+                <div className="mt-3 bg-red-950/60 border border-red-800/80 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-red-200">
+                  <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold text-red-100">Consultorio Cerrado este Día:</strong>
+                    <span>El consultorio no atiende los {currentDaySchedule?.label}. Por favor selecciona una fecha disponible (Lunes a Sábado).</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Horarios disponibles */}
             <div className="mb-8">
-              <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider mb-2">Horarios Disponibles:</label>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                {timeSlots.map(time => (
-                  <button
-                    key={time}
-                    type="button"
-                    onClick={() => setSelectedTime(time)}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-sm border transition-all ${
-                      selectedTime === time
-                        ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/25'
-                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    {time} hs
-                  </button>
-                ))}
-              </div>
+              <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider mb-2">
+                Horarios Disponibles para {currentDaySchedule?.label} ({availableTimeSlots.length} turnos):
+              </label>
+
+              {isDayOpen && availableTimeSlots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                  {availableTimeSlots.map(time => (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => setSelectedTime(time)}
+                      className={`py-2.5 px-3 rounded-xl font-bold text-sm border transition-all ${
+                        selectedTime === time
+                          ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/25'
+                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      {time} hs
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center text-xs text-slate-400 italic">
+                  No hay horarios de atención configurados para la fecha seleccionada.
+                </div>
+              )}
             </div>
 
             <button
+              disabled={!isDayOpen || availableTimeSlots.length === 0}
               onClick={() => setStep('details')}
-              className="w-full py-4 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white font-extrabold text-base rounded-2xl transition-all shadow-xl shadow-sky-500/25 flex items-center justify-center space-x-2"
+              className={`w-full py-4 font-extrabold text-base rounded-2xl transition-all shadow-xl flex items-center justify-center space-x-2 ${
+                isDayOpen && availableTimeSlots.length > 0
+                  ? 'bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white shadow-sky-500/25 cursor-pointer'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+              }`}
             >
               <span>Continuar con Mis Datos</span>
               <ArrowLeft className="w-5 h-5 rotate-180" />

@@ -12,8 +12,8 @@ import { PatientBooking } from './components/PatientBooking';
 import { Login } from './components/Login';
 import { Registro } from './components/Registro';
 import { NewAppointmentTicket } from './components/NewAppointmentTicket';
-import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS, CONDITION_METAS } from './data/mockData';
-import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist, ConditionType, ClinicalEvolution } from './types';
+import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS, CONDITION_METAS, DEFAULT_CLINIC_SCHEDULE } from './data/mockData';
+import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist, ConditionType, ClinicalEvolution, ClinicScheduleConfig } from './types';
 import { Calendar, Users, LogOut } from 'lucide-react';
 
 type AppPhase = 'intro' | 'main_menu' | 'booking' | 'login' | 'registro' | 'app';
@@ -44,10 +44,24 @@ export const App: React.FC = () => {
   // Estado del ticket flotante de 10s
   const [latestTicketAppointment, setLatestTicketAppointment] = useState<Appointment | null>(null);
 
-  // Estado del consultorio y staff de odontólogos
+  // Estado del consultorio, horarios y staff de odontólogos
   const [clinicName, setClinicName] = useState<string>('Odonto Merlo');
   const [clinicAddress, setClinicAddress] = useState<string>('Av. del Libertador 1450, Merlo');
   const [clinicPhone, setClinicPhone] = useState<string>('+54 9 11 4589-1234');
+
+  const [clinicSchedule, setClinicSchedule] = useState<ClinicScheduleConfig>(() => {
+    const saved = localStorage.getItem('odonto_clinic_schedule');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return DEFAULT_CLINIC_SCHEDULE;
+  });
+
+  const handleUpdateClinicSchedule = (newSchedule: ClinicScheduleConfig) => {
+    setClinicSchedule(newSchedule);
+    localStorage.setItem('odonto_clinic_schedule', JSON.stringify(newSchedule));
+  };
+
   const [dentists, setDentists] = useState<Dentist[]>([
     { id: 'den-1', name: 'Dra. Amalia Merlo', licenseNumber: 'MP 45890', specialty: 'Ortodoncia & Operatoria', phone: '+54 9 11 4589-1234', email: 'dra.merlo@odontomerlo.com', active: true },
     { id: 'den-2', name: 'Dr. Fernando Ruiz', licenseNumber: 'MP 51203', specialty: 'Endodoncia & Cirugía', phone: '+54 9 11 6723-9988', email: 'dr.ruiz@odontomerlo.com', active: true }
@@ -198,6 +212,7 @@ export const App: React.FC = () => {
           onBackToMenu={() => setAppPhase('main_menu')}
           onAddAppointment={handleAddAppointment}
           onTriggerTicket={(app) => setLatestTicketAppointment(app)}
+          clinicSchedule={clinicSchedule}
         />
         <NewAppointmentTicket
           appointment={latestTicketAppointment}
@@ -274,6 +289,7 @@ export const App: React.FC = () => {
             onAddAppointment={handleAddAppointment}
             onUpdateStatus={handleUpdateAppointmentStatus}
             onTriggerTicket={(app) => setLatestTicketAppointment(app)}
+            clinicSchedule={clinicSchedule}
           />
         )}
 
@@ -325,6 +341,8 @@ export const App: React.FC = () => {
             conditionColors={conditionColors}
             onUpdateConditionColor={handleUpdateConditionColor}
             onResetConditionColors={handleResetConditionColors}
+            clinicSchedule={clinicSchedule}
+            onUpdateClinicSchedule={handleUpdateClinicSchedule}
           />
         )}
 

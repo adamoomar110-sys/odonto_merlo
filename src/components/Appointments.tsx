@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Appointment, Patient, AppointmentStatus } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Appointment, Patient, AppointmentStatus, ClinicScheduleConfig } from '../types';
 import { Calendar, Clock, Plus, Search, CheckCircle, XCircle, AlertCircle, MessageSquare, User, Filter, Phone, AlertTriangle, Sparkles } from 'lucide-react';
+import { DEFAULT_CLINIC_SCHEDULE, getDayOfWeekKey, generateTimeSlotsFromSchedule } from '../data/mockData';
 
 interface AppointmentsProps {
   appointments: Appointment[];
@@ -8,6 +9,7 @@ interface AppointmentsProps {
   onAddAppointment: (newApp: Appointment) => void;
   onUpdateStatus: (id: string, status: AppointmentStatus) => void;
   onTriggerTicket?: (app: Appointment) => void;
+  clinicSchedule?: ClinicScheduleConfig;
 }
 
 export const Appointments: React.FC<AppointmentsProps> = ({
@@ -15,18 +17,31 @@ export const Appointments: React.FC<AppointmentsProps> = ({
   patients,
   onAddAppointment,
   onUpdateStatus,
-  onTriggerTicket
+  onTriggerTicket,
+  clinicSchedule
 }) => {
   const [filterDate, setFilterDate] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showModal, setShowModal] = useState<boolean>(false);
 
+  const activeSchedule = clinicSchedule || DEFAULT_CLINIC_SCHEDULE;
+
   // Form State
   const [selectedPatientId, setSelectedPatientId] = useState<string>(patients[0]?.id || '');
   const [dentistName, setDentistName] = useState<string>('Dra. Amalia Merlo');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState<string>('10:00');
+
+  const currentDayKey = getDayOfWeekKey(date);
+  const currentDaySchedule = activeSchedule[currentDayKey];
+  const isDayOpen = currentDaySchedule?.isOpen ?? true;
+
+  const availableTimeSlots = useMemo(() => {
+    if (!isDayOpen) return [];
+    return generateTimeSlotsFromSchedule(activeSchedule, date);
+  }, [activeSchedule, date, isDayOpen]);
+
+  const [time, setTime] = useState<string>(availableTimeSlots[0] || '10:00');
   const [specialty, setSpecialty] = useState<string>('Consultorio General');
   const [notes, setNotes] = useState<string>('');
 
@@ -285,27 +300,60 @@ export const Appointments: React.FC<AppointmentsProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Fecha:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Fecha:</label>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDayOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      {currentDaySchedule?.label}: {isDayOpen ? 'Abierto' : 'Cerrado'}
+                    </span>
+                  </div>
                   <input
                     type="date"
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setDate(newDate);
+                      const newSlots = generateTimeSlotsFromSchedule(activeSchedule, newDate);
+                      if (newSlots.length > 0) setTime(newSlots[0]);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:outline-none ${
+                      isDayOpen ? 'border-slate-300' : 'border-red-400 bg-red-50 text-red-900'
+                    }`}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Hora:</label>
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                    required
-                  />
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                    Hora ({isDayOpen ? `${currentDaySchedule?.startTime} - ${currentDaySchedule?.endTime}` : 'Cerrado'}):
+                  </label>
+                  {isDayOpen && availableTimeSlots.length > 0 ? (
+                    <select
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      required
+                    >
+                      {availableTimeSlots.map(slot => (
+                        <option key={slot} value={slot}>{slot} hs</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      disabled
+                      value="Consultorio Cerrado"
+                      className="w-full px-3 py-2 rounded-xl border border-red-300 text-xs font-bold text-red-700 bg-red-50"
+                    />
+                  )}
                 </div>
               </div>
+
+              {!isDayOpen && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>El consultorio permanece cerrado los <strong>{currentDaySchedule?.label}</strong>. Seleccione una fecha hábil.</span>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Observaciones / Indicaciones:</label>

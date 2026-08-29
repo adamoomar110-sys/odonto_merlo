@@ -153,3 +153,16 @@ export interface Dentist {
   active: boolean;
 }
 
+export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
+
+export interface DaySchedule {
+  day: DayOfWeek;
+  label: string;
+  isOpen: boolean;
+  startTime: string; // e.g. '08:00'
+  endTime: string; // e.g. '20:00'
+  slotDurationMinutes: number; // e.g. 30
+}
+
+export type ClinicScheduleConfig = Record<DayOfWeek, DaySchedule>;
+

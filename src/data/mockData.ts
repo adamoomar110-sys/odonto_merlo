@@ -1,4 +1,4 @@
-import { Patient, Appointment, Budget, ConditionMeta, ConditionType } from '../types';
+import { Patient, Appointment, Budget, ConditionMeta, ConditionType, ClinicScheduleConfig, DayOfWeek } from '../types';
 
 export const CONDITION_METAS: Record<ConditionType, ConditionMeta> = {
   // 1. PATOLOGÍAS Y HALLAZGOS
@@ -449,3 +449,48 @@ export const INITIAL_BUDGETS: Budget[] = [
     status: 'aprobado'
   }
 ];
+
+export const DEFAULT_CLINIC_SCHEDULE: ClinicScheduleConfig = {
+  lunes:     { day: 'lunes',     label: 'Lunes',     isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
+  martes:    { day: 'martes',    label: 'Martes',    isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
+  miercoles: { day: 'miercoles', label: 'Miércoles', isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
+  jueves:    { day: 'jueves',    label: 'Jueves',    isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
+  viernes:   { day: 'viernes',   label: 'Viernes',   isOpen: true,  startTime: '08:00', endTime: '20:00', slotDurationMinutes: 30 },
+  sabado:    { day: 'sabado',    label: 'Sábado',    isOpen: true,  startTime: '09:00', endTime: '14:00', slotDurationMinutes: 30 },
+  domingo:   { day: 'domingo',   label: 'Domingo',   isOpen: false, startTime: '09:00', endTime: '13:00', slotDurationMinutes: 30 }
+};
+
+export const getDayOfWeekKey = (dateStr: string): DayOfWeek => {
+  if (!dateStr) return 'lunes';
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return 'lunes';
+  const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const dayIndex = dateObj.getDay();
+  const map: DayOfWeek[] = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  return map[dayIndex] || 'lunes';
+};
+
+export const generateTimeSlotsFromSchedule = (scheduleConfig: ClinicScheduleConfig, dateStr: string): string[] => {
+  const dayKey = getDayOfWeekKey(dateStr);
+  const daySched = scheduleConfig?.[dayKey];
+  if (!daySched || !daySched.isOpen) return [];
+
+  const [startH, startM] = (daySched.startTime || '08:00').split(':').map(Number);
+  const [endH, endM] = (daySched.endTime || '20:00').split(':').map(Number);
+  const step = daySched.slotDurationMinutes || 30;
+
+  const slots: string[] = [];
+  let currentMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  while (currentMinutes < endMinutes) {
+    const h = Math.floor(currentMinutes / 60);
+    const m = currentMinutes % 60;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    slots.push(`${hh}:${mm}`);
+    currentMinutes += step;
+  }
+
+  return slots;
+};

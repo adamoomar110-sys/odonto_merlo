@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save, Download, Upload, Database, RefreshCw, AlertCircle, Palette, RotateCcw } from 'lucide-react';
-import { Dentist, Patient, Appointment, Budget, ConditionType } from '../types';
-import { CONDITION_METAS } from '../data/mockData';
+import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save, Download, Upload, Database, RefreshCw, AlertCircle, Palette, RotateCcw, Clock, Calendar } from 'lucide-react';
+import { Dentist, Patient, Appointment, Budget, ConditionType, ClinicScheduleConfig, DayOfWeek, DaySchedule } from '../types';
+import { CONDITION_METAS, DEFAULT_CLINIC_SCHEDULE } from '../data/mockData';
 
 interface SettingsProps {
   clinicName: string;
@@ -21,6 +21,8 @@ interface SettingsProps {
   conditionColors: Record<ConditionType, string>;
   onUpdateConditionColor: (conditionId: ConditionType, newColor: string) => void;
   onResetConditionColors: () => void;
+  clinicSchedule: ClinicScheduleConfig;
+  onUpdateClinicSchedule: (newSchedule: ClinicScheduleConfig) => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
@@ -40,13 +42,39 @@ export const Settings: React.FC<SettingsProps> = ({
   onRestoreBackupData,
   conditionColors,
   onUpdateConditionColor,
-  onResetConditionColors
+  onResetConditionColors,
+  clinicSchedule,
+  onUpdateClinicSchedule
 }) => {
   // Estado local para los campos del consultorio
   const [tempClinicName, setTempClinicName] = useState(clinicName);
   const [tempAddress, setTempAddress] = useState(clinicAddress);
   const [tempPhone, setTempPhone] = useState(clinicPhone);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Estado local para la grilla de horarios del consultorio
+  const [tempSchedule, setTempSchedule] = useState<ClinicScheduleConfig>(clinicSchedule || DEFAULT_CLINIC_SCHEDULE);
+  const [scheduleSavedMessage, setScheduleSavedMessage] = useState(false);
+
+  const handleToggleDayOpen = (dayKey: DayOfWeek, isOpen: boolean) => {
+    setTempSchedule(prev => ({
+      ...prev,
+      [dayKey]: { ...prev[dayKey], isOpen }
+    }));
+  };
+
+  const handleUpdateDayTime = (dayKey: DayOfWeek, field: keyof DaySchedule, value: any) => {
+    setTempSchedule(prev => ({
+      ...prev,
+      [dayKey]: { ...prev[dayKey], [field]: value }
+    }));
+  };
+
+  const handleSaveSchedule = () => {
+    onUpdateClinicSchedule(tempSchedule);
+    setScheduleSavedMessage(true);
+    setTimeout(() => setScheduleSavedMessage(false), 3500);
+  };
 
   // Estado local para el formulario de nuevo Odontólogo/a
   const [newDentistName, setNewDentistName] = useState('');
@@ -218,6 +246,112 @@ export const Settings: React.FC<SettingsProps> = ({
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
           <Sparkles className="w-4 h-4 text-teal-600" />
           <span>Odonto Merlo v1.2</span>
+        </div>
+      </div>
+
+      {/* SECCIÓN HORARIOS Y DÍAS DE ATENCIÓN DEL CONSULTORIO */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 flex-wrap gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+              <Clock className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Días y Horarios de Atención del Consultorio</h3>
+              <p className="text-xs text-slate-500">Configura los días abiertos y la franja horaria disponible para la reserva de turnos de pacientes.</p>
+            </div>
+          </div>
+          {scheduleSavedMessage && (
+            <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-full flex items-center gap-1.5 animate-fade-in">
+              <Check className="w-4 h-4 text-emerald-600" />
+              ¡Horarios del consultorio guardados!
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as DayOfWeek[]).map(dayKey => {
+            const dayData = tempSchedule[dayKey] || DEFAULT_CLINIC_SCHEDULE[dayKey];
+            return (
+              <div
+                key={dayKey}
+                className={`p-4 rounded-xl border transition-all ${
+                  dayData.isOpen
+                    ? 'bg-slate-50 border-teal-200 ring-1 ring-teal-100 shadow-xs'
+                    : 'bg-slate-100/60 border-slate-200 opacity-75'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3 border-b border-slate-200/80 pb-2">
+                  <span className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-teal-600" />
+                    {dayData.label}
+                  </span>
+                  <label className="flex items-center space-x-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dayData.isOpen}
+                      onChange={e => handleToggleDayOpen(dayKey, e.target.checked)}
+                      className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4"
+                    />
+                    <span className={`text-[11px] font-black ${dayData.isOpen ? 'text-emerald-700' : 'text-slate-500'}`}>
+                      {dayData.isOpen ? 'ABIERTO' : 'CERRADO'}
+                    </span>
+                  </label>
+                </div>
+
+                {dayData.isOpen ? (
+                  <div className="space-y-2 text-xs">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Apertura:</label>
+                        <input
+                          type="time"
+                          value={dayData.startTime}
+                          onChange={e => handleUpdateDayTime(dayKey, 'startTime', e.target.value)}
+                          className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Cierre:</label>
+                        <input
+                          type="time"
+                          value={dayData.endTime}
+                          onChange={e => handleUpdateDayTime(dayKey, 'endTime', e.target.value)}
+                          className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Frecuencia / Duración:</label>
+                      <select
+                        value={dayData.slotDurationMinutes}
+                        onChange={e => handleUpdateDayTime(dayKey, 'slotDurationMinutes', Number(e.target.value))}
+                        className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+                      >
+                        <option value={20}>20 Minutos</option>
+                        <option value={30}>30 Minutos</option>
+                        <option value={45}>45 Minutos</option>
+                        <option value={60}>60 Minutos (1 hora)</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic py-4 text-center font-medium">Consultorio Cerrado</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleSaveSchedule}
+            className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            <span>Guardar Días y Horarios de Atención</span>
+          </button>
         </div>
       </div>
 
