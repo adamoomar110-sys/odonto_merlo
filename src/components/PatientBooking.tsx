@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus, XCircle } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Appointment, ClinicScheduleConfig, DayOfWeek } from '../types';
 import { DEFAULT_CLINIC_SCHEDULE, getDayOfWeekKey, generateTimeSlotsFromSchedule } from '../data/mockData';
 
@@ -21,6 +21,70 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
   const currentDayKey = getDayOfWeekKey(selectedDate);
   const currentDaySchedule = activeSchedule[currentDayKey];
   const isDayOpen = currentDaySchedule?.isOpen ?? true;
+
+  // Almanaque visual interactivo state
+  const todayObj = useMemo(() => new Date(), []);
+  const [viewYear, setViewYear] = useState(todayObj.getFullYear());
+  const [viewMonth, setViewMonth] = useState(todayObj.getMonth());
+
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(prev => prev - 1);
+    } else {
+      setViewMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(prev => prev + 1);
+    } else {
+      setViewMonth(prev => prev + 1);
+    }
+  };
+
+  // Celdas del mes para el almanaque
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const lastDay = new Date(viewYear, viewMonth + 1, 0);
+    const totalDays = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 = Domingo, 1 = Lunes...
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const days = [];
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push(null);
+    }
+
+    for (let d = 1; d <= totalDays; d++) {
+      const monthStr = String(viewMonth + 1).padStart(2, '0');
+      const dayStr = String(d).padStart(2, '0');
+      const dateStr = `${viewYear}-${monthStr}-${dayStr}`;
+      const dayKey = getDayOfWeekKey(dateStr);
+      const schedule = activeSchedule[dayKey];
+      const isOpen = schedule?.isOpen ?? false;
+      const isPast = dateStr < todayStr;
+
+      days.push({
+        dayNum: d,
+        dateStr,
+        dayKey,
+        schedule,
+        isOpen,
+        isPast
+      });
+    }
+
+    return days;
+  }, [viewYear, viewMonth, activeSchedule]);
 
   const availableTimeSlots = useMemo(() => {
     if (!isDayOpen) return [];
@@ -181,43 +245,112 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
               </div>
             </div>
 
-            {/* Fecha */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider">Fecha del Turno:</label>
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${isDayOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
-                  {currentDaySchedule?.label}: {isDayOpen ? (currentDaySchedule?.hasSplitShift ? `Abierto (${currentDaySchedule?.startTime}-${currentDaySchedule?.endTime} / ${currentDaySchedule?.startTime2}-${currentDaySchedule?.endTime2} hs)` : `Abierto (${currentDaySchedule?.startTime}-${currentDaySchedule?.endTime} hs)`) : 'Cerrado'}
-                </span>
-              </div>
-              
-              <div className="relative">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={e => {
-                    const newDate = e.target.value;
-                    setSelectedDate(newDate);
-                    const newSlots = generateTimeSlotsFromSchedule(activeSchedule, newDate);
-                    if (newSlots.length > 0) {
-                      setSelectedTime(newSlots[0]);
-                    }
-                  }}
-                  className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-white font-bold text-sm focus:outline-none ${
-                    isDayOpen ? 'border-slate-800 focus:border-sky-500' : 'border-red-500/60 ring-2 ring-red-500/20'
-                  }`}
-                />
-              </div>
-
-              {!isDayOpen && (
-                <div className="mt-3 bg-red-950/60 border border-red-800/80 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-red-200">
-                  <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            {/* ALMANAQUE VISUAL INTERACTIVO (Calendario de Selección de Fecha) */}
+            <div className="mb-6 bg-slate-950/90 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800 flex-wrap gap-2">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                    <Calendar className="w-4 h-4" />
+                  </div>
                   <div>
-                    <strong className="block font-bold text-red-100">Consultorio Cerrado este Día:</strong>
-                    <span>El consultorio no atiende los {currentDaySchedule?.label}. Por favor selecciona una fecha disponible (Lunes a Sábado).</span>
+                    <h3 className="text-base font-extrabold text-white">
+                      Almanaque de Turnos: <span className="text-sky-400 capitalize">{monthNames[viewMonth]} {viewYear}</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400">Selecciona un día en el calendario para desplegar los horarios disponibles.</p>
                   </div>
                 </div>
-              )}
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1 text-xs font-bold cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Mes Ant.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1 text-xs font-bold cursor-pointer"
+                  >
+                    <span>Mes Sig.</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Cabecera Días de la Semana */}
+              <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
+                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+                  <div key={d} className="text-[11px] font-black uppercase text-slate-400 py-1.5 bg-slate-900/50 rounded-lg">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* Grilla de Días del Almanaque */}
+              <div className="grid grid-cols-7 gap-1.5">
+                {calendarDays.map((item, idx) => {
+                  if (!item) return <div key={`empty-${idx}`} className="h-14" />;
+
+                  const { dayNum, dateStr, isOpen, isPast, schedule } = item;
+                  const isSelected = selectedDate === dateStr;
+
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      disabled={isPast || !isOpen}
+                      onClick={() => {
+                        setSelectedDate(dateStr);
+                        const slots = generateTimeSlotsFromSchedule(activeSchedule, dateStr);
+                        if (slots.length > 0) setSelectedTime(slots[0]);
+                      }}
+                      className={`h-14 rounded-2xl border flex flex-col items-center justify-center transition-all relative p-1 ${
+                        isSelected
+                          ? 'bg-gradient-to-b from-sky-500 to-teal-500 border-sky-300 text-white shadow-lg shadow-sky-500/30 ring-2 ring-sky-300 scale-105 z-10 font-black'
+                          : !isOpen || isPast
+                          ? 'bg-slate-900/40 border-slate-850 text-slate-600 opacity-40 cursor-not-allowed'
+                          : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-sky-500/60 hover:bg-slate-800/90 cursor-pointer font-extrabold'
+                      }`}
+                    >
+                      <span className="text-sm leading-none">{dayNum}</span>
+                      <span className={`text-[9px] font-extrabold tracking-tighter mt-1 px-1 py-0.5 rounded-full ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : !isOpen
+                          ? 'text-red-400/80'
+                          : isPast
+                          ? 'text-slate-600'
+                          : 'text-teal-400'
+                      }`}>
+                        {!isOpen ? 'Cerrado' : isPast ? 'Pasado' : schedule?.hasSplitShift ? `${schedule.startTime}-${schedule.endTime2}` : `${schedule.startTime}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Leyenda y Fecha Seleccionada */}
+              <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center space-x-4 text-[11px] text-slate-400 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Seleccionado
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-teal-400"></span> Abierto
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Cerrado / Pasado
+                  </span>
+                </div>
+
+                <div className="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-slate-200 font-bold text-xs flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Fecha seleccionada: <strong className="text-sky-300">{selectedDate.split('-').reverse().join('/')}</strong> ({currentDaySchedule?.label})</span>
+                </div>
+              </div>
             </div>
 
             {/* Horarios disponibles */}
