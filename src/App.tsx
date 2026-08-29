@@ -12,8 +12,8 @@ import { PatientBooking } from './components/PatientBooking';
 import { Login } from './components/Login';
 import { Registro } from './components/Registro';
 import { NewAppointmentTicket } from './components/NewAppointmentTicket';
-import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS } from './data/mockData';
-import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist } from './types';
+import { INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_BUDGETS, CONDITION_METAS } from './data/mockData';
+import { Patient, Appointment, Budget, ToothFinding, AppointmentStatus, Dentist, ConditionType, ClinicalEvolution } from './types';
 import { Calendar, Users, LogOut } from 'lucide-react';
 
 type AppPhase = 'intro' | 'main_menu' | 'booking' | 'login' | 'registro' | 'app';
@@ -27,6 +27,19 @@ export const App: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(INITIAL_PATIENTS[0].id);
+
+  // Estado de Colores Personalizados para el Odontograma
+  const [conditionColors, setConditionColors] = useState<Record<ConditionType, string>>(() => {
+    const saved = localStorage.getItem('odonto_condition_colors');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    const defaults: Record<string, string> = {};
+    Object.keys(CONDITION_METAS).forEach(key => {
+      defaults[key] = CONDITION_METAS[key as ConditionType].color;
+    });
+    return defaults as Record<ConditionType, string>;
+  });
 
   // Estado del ticket flotante de 10s
   const [latestTicketAppointment, setLatestTicketAppointment] = useState<Appointment | null>(null);
@@ -42,11 +55,61 @@ export const App: React.FC = () => {
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || patients[0];
 
-  // Handlers
+  // Handlers para Colores del Odontograma
+  const handleUpdateConditionColor = (conditionId: ConditionType, newColor: string) => {
+    setConditionColors(prev => {
+      const updated = { ...prev, [conditionId]: newColor };
+      localStorage.setItem('odonto_condition_colors', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleResetConditionColors = () => {
+    const defaults: Record<string, string> = {};
+    Object.keys(CONDITION_METAS).forEach(key => {
+      defaults[key] = CONDITION_METAS[key as ConditionType].color;
+    });
+    localStorage.setItem('odonto_condition_colors', JSON.stringify(defaults));
+    setConditionColors(defaults as Record<ConditionType, string>);
+  };
+
+  // Handlers generales
   const handleUpdateOdontogramFindings = (patientId: string, newFindings: ToothFinding[]) => {
     setPatients(prev => prev.map(p =>
       p.id === patientId ? { ...p, odontogramFindings: newFindings } : p
     ));
+  };
+
+  const handleAddClinicalEvolution = (patientId: string, newEvolution: ClinicalEvolution) => {
+    setPatients(prev => prev.map(p => {
+      if (p.id === patientId) {
+        const updatedEvo = [newEvolution, ...(p.evolutions || [])];
+        return { ...p, evolutions: updatedEvo };
+      }
+      return p;
+    }));
+  };
+
+  const handleUpdateClinicalEvolution = (patientId: string, updatedEvolution: ClinicalEvolution) => {
+    setPatients(prev => prev.map(p => {
+      if (p.id === patientId) {
+        const updatedEvoList = (p.evolutions || []).map(e =>
+          e.id === updatedEvolution.id ? updatedEvolution : e
+        );
+        return { ...p, evolutions: updatedEvoList };
+      }
+      return p;
+    }));
+  };
+
+  const handleDeleteClinicalEvolution = (patientId: string, evolutionId: string) => {
+    setPatients(prev => prev.map(p => {
+      if (p.id === patientId) {
+        const updatedEvo = (p.evolutions || []).filter(e => e.id !== evolutionId);
+        return { ...p, evolutions: updatedEvo };
+      }
+      return p;
+    }));
   };
 
   const handleAddAppointment = (newApp: Appointment) => {
@@ -59,6 +122,10 @@ export const App: React.FC = () => {
 
   const handleAddPatient = (newPatient: Patient) => {
     setPatients([newPatient, ...patients]);
+  };
+
+  const handleUpdatePatient = (updatedPatient: Patient) => {
+    setPatients(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
   };
 
   const handleAddBudget = (newBudget: Budget) => {
@@ -93,6 +160,10 @@ export const App: React.FC = () => {
       if (backupData.clinicInfo.name) setClinicName(backupData.clinicInfo.name);
       if (backupData.clinicInfo.address) setClinicAddress(backupData.clinicInfo.address);
       if (backupData.clinicInfo.phone) setClinicPhone(backupData.clinicInfo.phone);
+    }
+    if (backupData.conditionColors) {
+      setConditionColors(backupData.conditionColors);
+      localStorage.setItem('odonto_condition_colors', JSON.stringify(backupData.conditionColors));
     }
     if (Array.isArray(backupData.dentists)) setDentists(backupData.dentists);
     if (Array.isArray(backupData.patients)) {
@@ -189,7 +260,11 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'odontogram' && (
-          <Odontogram patient={selectedPatient} onUpdateFindings={handleUpdateOdontogramFindings} />
+          <Odontogram 
+            patient={selectedPatient} 
+            onUpdateFindings={handleUpdateOdontogramFindings} 
+            conditionColors={conditionColors}
+          />
         )}
 
         {activeTab === 'appointments' && (
@@ -208,10 +283,17 @@ export const App: React.FC = () => {
             selectedPatientId={selectedPatientId}
             onSelectPatient={setSelectedPatientId}
             onAddPatient={handleAddPatient}
+            onUpdatePatient={handleUpdatePatient}
             onNavigateToOdontogram={(pId) => {
               setSelectedPatientId(pId);
               setActiveTab('odontogram');
             }}
+            onUpdateOdontogramFindings={handleUpdateOdontogramFindings}
+            onAddClinicalEvolution={handleAddClinicalEvolution}
+            onUpdateClinicalEvolution={handleUpdateClinicalEvolution}
+            onDeleteClinicalEvolution={handleDeleteClinicalEvolution}
+            conditionColors={conditionColors}
+            dentists={dentists}
           />
         )}
 
@@ -240,6 +322,9 @@ export const App: React.FC = () => {
             appointments={appointments}
             budgets={budgets}
             onRestoreBackupData={handleRestoreBackupData}
+            conditionColors={conditionColors}
+            onUpdateConditionColor={handleUpdateConditionColor}
+            onResetConditionColors={handleResetConditionColors}
           />
         )}
 

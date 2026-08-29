@@ -1,22 +1,39 @@
 export type ToothSurface = 'vestibular' | 'lingual' | 'mesial' | 'distal' | 'oclusal' | 'pieza';
 
 export type ConditionType = 
+  // Patologías / Hallazgos
   | 'sano'
   | 'caries_np'
-  | 'caries_p' 
-  | 'obturado' 
-  | 'endodoncia' 
-  | 'ausente' 
-  | 'extraido'
-  | 'corona' 
-  | 'sellador' 
+  | 'caries_p'
+  | 'surco_profundo'
+  | 'fractura'
+  | 'desgaste'
+  | 'retenido'
+  | 'supernumerario'
+  // Tratamientos / Restauraciones
+  | 'obturado'
+  | 'obturacion_defectuosa'
+  | 'endodoncia'
+  | 'corona'
+  | 'incrustacion'
+  | 'perno'
+  | 'sellador'
+  // Reemplazos / Prótesis / Cirugía
+  | 'implante'
+  | 'puente'
+  | 'protesis_removible'
+  | 'protesis_total'
   | 'extraccion_indicada'
-  | 'puente';
+  | 'ausente'
+  | 'extraido'
+  // Estructura
+  | 'erupcion';
 
 export interface ConditionMeta {
   id: ConditionType;
   label: string;
   color: string; // Tailwind hex or css color
+  category?: 'patologia' | 'tratamiento' | 'protesis' | 'ortodoncia';
   bgClass: string;
   textClass: string;
   description: string;
@@ -55,6 +72,7 @@ export interface HealthDeclaration {
   respiratoryDisease: boolean; // Asma / Enf. Respiratoria
   hepatitis: boolean; // Hepatitis / Enf. Hepática
   epilepsy: boolean; // Epilepsia / Convulsiones
+  customConditions?: string[]; // Enfermedades / Patologías personalizadas agregadas por el profesional
   // Temporales / Estado Actual
   activeInfection: boolean; // Infección activa
   fever: boolean; // Fiebre reciente
@@ -62,6 +80,15 @@ export interface HealthDeclaration {
   currentMedication: string; // Medicación actual en curso
   recentSurgeries: string; // Cirugías recientes
   localAnesthesiaAllergy: boolean; // Alergia a Anestesia Local
+}
+
+export interface ClinicalEvolution {
+  id: string;
+  date: string; // YYYY-MM-DD
+  dentistName: string; // Nombre del profesional / odontólogo/a
+  toothNumber?: number; // Pieza dental (opcional)
+  treatment: string; // Procedimiento realizado / Evolución del turno
+  notes?: string; // Observaciones clínicas, indicación de fármacos, etc.
 }
 
 export interface Patient {
@@ -79,6 +106,7 @@ export interface Patient {
   healthDeclaration?: HealthDeclaration; // Planilla de enfermedades preexistentes y temporales (Anamnesis)
   odontogramFindings: ToothFinding[];
   xrays?: DentalXRay[]; // Radiografías opcionales
+  evolutions?: ClinicalEvolution[]; // Evolución clínica diaria de turnos y tratamientos
   notes: string;
 }
 

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save, Download, Upload, Database, RefreshCw, AlertCircle } from 'lucide-react';
-import { Dentist, Patient, Appointment, Budget } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Building2, UserPlus, Stethoscope, ShieldCheck, Phone, Mail, FileBadge, Check, Trash2, Edit2, Sparkles, Save, Download, Upload, Database, RefreshCw, AlertCircle, Palette, RotateCcw } from 'lucide-react';
+import { Dentist, Patient, Appointment, Budget, ConditionType } from '../types';
+import { CONDITION_METAS } from '../data/mockData';
 
 interface SettingsProps {
   clinicName: string;
@@ -17,6 +18,9 @@ interface SettingsProps {
   appointments: Appointment[];
   budgets: Budget[];
   onRestoreBackupData: (backupData: any) => void;
+  conditionColors: Record<ConditionType, string>;
+  onUpdateConditionColor: (conditionId: ConditionType, newColor: string) => void;
+  onResetConditionColors: () => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
@@ -33,7 +37,10 @@ export const Settings: React.FC<SettingsProps> = ({
   patients,
   appointments,
   budgets,
-  onRestoreBackupData
+  onRestoreBackupData,
+  conditionColors,
+  onUpdateConditionColor,
+  onResetConditionColors
 }) => {
   // Estado local para los campos del consultorio
   const [tempClinicName, setTempClinicName] = useState(clinicName);
@@ -52,6 +59,9 @@ export const Settings: React.FC<SettingsProps> = ({
   // Estado local para Backup
   const [restoreSuccessMessage, setRestoreSuccessMessage] = useState(false);
   const [restoreErrorMessage, setRestoreErrorMessage] = useState('');
+
+  // Filtro de categoría en gestor de colores
+  const [colorCategoryFilter, setColorCategoryFilter] = useState<string>('todas');
 
   const handleSaveClinicSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,13 +99,14 @@ export const Settings: React.FC<SettingsProps> = ({
   // Handler para Descargar Backup a la PC del cliente
   const handleDownloadBackup = () => {
     const fullData = {
-      version: '1.1.0',
+      version: '1.2.0',
       exportDate: new Date().toISOString(),
       clinicInfo: {
         name: clinicName,
         address: clinicAddress,
         phone: clinicPhone
       },
+      conditionColors,
       dentists,
       patients,
       appointments,
@@ -140,6 +151,53 @@ export const Settings: React.FC<SettingsProps> = ({
     reader.readAsText(file);
   };
 
+  const filteredConditionList = useMemo(() => {
+    return Object.values(CONDITION_METAS).filter(cond => {
+      return colorCategoryFilter === 'todas' || cond.category === colorCategoryFilter;
+    });
+  }, [colorCategoryFilter]);
+
+  // Preset Palettes
+  const applyPresetPalette = (preset: 'facultad' | 'neon' | 'pastel') => {
+    if (preset === 'facultad') {
+      onResetConditionColors();
+    } else if (preset === 'neon') {
+      const neonMap: Partial<Record<ConditionType, string>> = {
+        caries_np: '#ff0055',
+        caries_p: '#ff0000',
+        obturado: '#00d2ff',
+        obturacion_defectuosa: '#ef4444',
+        endodoncia: '#7b00ff',
+        corona: '#00ffaa',
+        incrustacion: '#00ffff',
+        implante: '#39ff14',
+        extraccion_indicada: '#ff007f',
+        ausente: '#ff2a2a',
+        extraido: '#0055ff'
+      };
+      Object.keys(neonMap).forEach(key => {
+        onUpdateConditionColor(key as ConditionType, neonMap[key as ConditionType]!);
+      });
+    } else if (preset === 'pastel') {
+      const pastelMap: Partial<Record<ConditionType, string>> = {
+        caries_np: '#f87171',
+        caries_p: '#ef4444',
+        obturado: '#60a5fa',
+        obturacion_defectuosa: '#f87171',
+        endodoncia: '#818cf8',
+        corona: '#38bdf8',
+        incrustacion: '#38bdf8',
+        implante: '#34d399',
+        extraccion_indicada: '#fb7185',
+        ausente: '#f87171',
+        extraido: '#3b82f6'
+      };
+      Object.keys(pastelMap).forEach(key => {
+        onUpdateConditionColor(key as ConditionType, pastelMap[key as ConditionType]!);
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       
@@ -150,16 +208,16 @@ export const Settings: React.FC<SettingsProps> = ({
             <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
               ⚙️
             </div>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Configuración del Consultorio & Respaldos</h2>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Configuración & Personalización Profesional</h2>
           </div>
           <p className="text-slate-500 text-xs mt-1">
-            Administra los datos de la clínica, los odontólogos habilitados y realiza copias de seguridad locales.
+            Administra los datos de la clínica, odontólogos, personalización de colores del odontograma y copias de seguridad.
           </p>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
           <Sparkles className="w-4 h-4 text-teal-600" />
-          <span>Configuración Profesional v1.1</span>
+          <span>Odonto Merlo v1.2</span>
         </div>
       </div>
 
@@ -322,7 +380,119 @@ export const Settings: React.FC<SettingsProps> = ({
 
       </div>
 
-      {/* SECCIÓN 3: COPIA DE SEGURIDAD Y RESTAURACIÓN LOCAL (PC DEL CLIENTE) */}
+      {/* SECCIÓN 3: PERSONALIZACIÓN DE COLORES DEL ODONTOGRAMA Y TRATAMIENTOS */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+              <Palette className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                3. Personalización de Colores del Odontograma y Tratamientos
+                <span className="text-[10px] font-extrabold uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                  23 Patologías y Tratamientos
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500">Cambia el color de cada afección o tratamiento para adaptar el odontograma a tus preferencias clínicas.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => applyPresetPalette('facultad')}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              title="Colores FDI Tradicionales de Universidad"
+            >
+              🎓 Facultad Tradicional
+            </button>
+            <button
+              onClick={() => applyPresetPalette('neon')}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 transition"
+              title="Colores de Alto Contraste / Neón"
+            >
+              ⚡ Neón / Alto Contraste
+            </button>
+            <button
+              onClick={() => applyPresetPalette('pastel')}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 transition"
+              title="Colores Pasteles Suaves"
+            >
+              🎨 Pastel Clínico
+            </button>
+            <button
+              onClick={onResetConditionColors}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-red-50 hover:bg-red-100 text-red-700 transition flex items-center gap-1"
+              title="Restablecer todos los colores a valores por defecto"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Restablecer
+            </button>
+          </div>
+        </div>
+
+        {/* Filtros de Categoría para Colores */}
+        <div className="flex flex-wrap gap-2 text-xs font-bold">
+          {[
+            { id: 'todas', label: 'Todas (23)' },
+            { id: 'patologia', label: 'Patologías & Hallazgos (8)' },
+            { id: 'tratamiento', label: 'Tratamientos & Restauraciones (7)' },
+            { id: 'protesis', label: 'Prótesis, Implantes & Cirugía (8)' }
+          ].map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setColorCategoryFilter(cat.id)}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                colorCategoryFilter === cat.id
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid de Selectores de Color */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredConditionList.map((cond) => {
+            const currentColor = conditionColors[cond.id] || cond.color;
+            return (
+              <div 
+                key={cond.id}
+                className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-purple-300 transition-all flex items-center justify-between gap-3 shadow-2xs"
+              >
+                <div className="flex items-center space-x-3 min-w-0">
+                  {/* Visual Preview Swatch */}
+                  <div 
+                    className="w-8 h-8 rounded-xl border border-slate-300 shadow-inner flex items-center justify-center text-xs shrink-0 relative overflow-hidden"
+                    style={{ backgroundColor: currentColor }}
+                  >
+                    {cond.symbol && <span className="font-extrabold text-white drop-shadow-xs">{cond.symbol}</span>}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-extrabold text-slate-800 truncate" title={cond.label}>{cond.label}</h4>
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">{currentColor}</span>
+                  </div>
+                </div>
+
+                {/* Color Picker Input */}
+                <div className="relative shrink-0">
+                  <input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => onUpdateConditionColor(cond.id, e.target.value)}
+                    className="w-9 h-9 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white shadow-xs hover:scale-105 transition-transform"
+                    title={`Cambiar color para: ${cond.label}`}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECCIÓN 4: COPIA DE SEGURIDAD Y RESTAURACIÓN LOCAL (PC DEL CLIENTE) */}
       <div className="bg-slate-900 text-slate-100 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center space-x-3">
@@ -331,7 +501,7 @@ export const Settings: React.FC<SettingsProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                3. Copia de Seguridad & Respaldos (PC Local del Cliente)
+                4. Copia de Seguridad & Respaldos (PC Local del Cliente)
                 <span className="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                   100% Seguro 🛡️
                 </span>
@@ -351,7 +521,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 <span>A. Descargar Copia de Seguridad a tu Computadora</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Descarga un archivo seguro conteniendo la lista de pacientes, odontogramas, fotos, radiografías, turnos y presupuestos.
+                Descarga un archivo seguro conteniendo la lista de pacientes, odontogramas, colores personalizados, turnos y presupuestos.
               </p>
             </div>
 
@@ -402,7 +572,7 @@ export const Settings: React.FC<SettingsProps> = ({
         )}
       </div>
 
-      {/* SECCIÓN 4: LISTADO Y ESTADO DE ODONTÓLOGOS DEL STAFF */}
+      {/* SECCIÓN 5: LISTADO Y ESTADO DE ODONTÓLOGOS DEL STAFF */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
           <div className="flex items-center space-x-3">

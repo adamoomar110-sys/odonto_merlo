@@ -1,103 +1,237 @@
-import { Patient, Appointment, Budget, ConditionMeta } from '../types';
+import { Patient, Appointment, Budget, ConditionMeta, ConditionType } from '../types';
 
-export const CONDITION_METAS: Record<string, ConditionMeta> = {
+export const CONDITION_METAS: Record<ConditionType, ConditionMeta> = {
+  // 1. PATOLOGÍAS Y HALLAZGOS
   sano: {
     id: 'sano',
-    label: 'Sano',
-    color: '#e2e8f0',
+    label: 'Sano / Sin Patología',
+    color: '#94a3b8',
+    category: 'patologia',
     bgClass: 'bg-slate-100',
     textClass: 'text-slate-700',
-    description: 'Pieza dental sin patologías'
+    description: 'Pieza dental en buen estado sin alteraciones'
   },
   caries_np: {
     id: 'caries_np',
     label: 'Caries No Penetrante (NP)',
     color: '#ef4444',
+    category: 'patologia',
     bgClass: 'bg-red-100',
     textClass: 'text-red-700',
-    description: 'Lesión cariosa no penetrante (Rojo - NP)',
+    description: 'Lesión cariosa no penetrante / superficial',
     symbol: 'NP'
   },
   caries_p: {
     id: 'caries_p',
     label: 'Caries Penetrante (P)',
     color: '#dc2626',
+    category: 'patologia',
     bgClass: 'bg-red-200',
     textClass: 'text-red-900',
-    description: 'Lesión cariosa penetrante (Rojo - P)',
+    description: 'Lesión cariosa penetrante / profunda',
     symbol: 'P'
   },
+  surco_profundo: {
+    id: 'surco_profundo',
+    label: 'Surco Profundo',
+    color: '#ef4444',
+    category: 'patologia',
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-800',
+    description: 'Surco profundo marcado con una raya horizontal roja por cara',
+    symbol: '➖'
+  },
+  fractura: {
+    id: 'fractura',
+    label: 'Fractura Dental',
+    color: '#dc2626',
+    category: 'patologia',
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-800',
+    description: 'Rayito rojo marcado por cara dental seleccionada',
+    symbol: '⚡'
+  },
+  desgaste: {
+    id: 'desgaste',
+    label: 'Desgaste / Bruxismo / Atrición',
+    color: '#06b6d4',
+    category: 'patologia',
+    bgClass: 'bg-cyan-100',
+    textClass: 'text-cyan-800',
+    description: 'Línea celeste marcada por cara dental seleccionada',
+    symbol: '📈'
+  },
+  retenido: {
+    id: 'retenido',
+    label: 'Diente Retenido / Impactado',
+    color: '#854d0e',
+    category: 'patologia',
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-900',
+    description: 'Diente no erupcionado alojado en el maxilar',
+    symbol: '🛑'
+  },
+  supernumerario: {
+    id: 'supernumerario',
+    label: 'Diente Supernumerario',
+    color: '#14b8a6',
+    category: 'patologia',
+    bgClass: 'bg-teal-100',
+    textClass: 'text-teal-800',
+    description: 'Pieza dental adicional al esquema normal',
+    symbol: '➕'
+  },
+  // 2. TRATAMIENTOS Y RESTAURACIONES
   obturado: {
     id: 'obturado',
-    label: 'Obturado / Arreglo',
+    label: 'Obturado / Restauración',
     color: '#3b82f6',
+    category: 'tratamiento',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-700',
-    description: 'Restauración con composite o amalgama (Azul)',
+    description: 'Arreglo con composite, ionómero o amalgama',
     symbol: '🔵'
+  },
+  obturacion_defectuosa: {
+    id: 'obturacion_defectuosa',
+    label: 'Restauración Filtrada',
+    color: '#ef4444',
+    category: 'tratamiento',
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-800',
+    description: 'Restauración filtrada en el color rojo de la caries con bordes azules',
+    symbol: '🔴'
   },
   endodoncia: {
     id: 'endodoncia',
-    label: 'Tratamiento de Conducto',
-    color: '#3b82f6',
+    label: 'Tratamiento de Conducto (TC)',
+    color: '#2563eb',
+    category: 'tratamiento',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-700',
-    description: 'Endodoncia / Conducto realizado (Azul)',
-    symbol: '🔵'
+    description: 'Indicado con las letras TC sobre la pieza sin marcar el diente',
+    symbol: 'TC'
   },
   corona: {
     id: 'corona',
-    label: 'Corona / Prótesis',
-    color: '#3b82f6',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-700',
-    description: 'Corona fija o incrustación (Azul)',
+    label: 'Corona / Prótesis Fija',
+    color: '#0284c7',
+    category: 'tratamiento',
+    bgClass: 'bg-sky-100',
+    textClass: 'text-sky-800',
+    description: 'Funda / Corona sobre diente o muñón',
     symbol: '👑'
+  },
+  incrustacion: {
+    id: 'incrustacion',
+    label: 'Incrustación / Carilla Estética',
+    color: '#06b6d4',
+    category: 'tratamiento',
+    bgClass: 'bg-cyan-100',
+    textClass: 'text-cyan-800',
+    description: 'Marcado por cara dental en color celeste',
+    symbol: '💎'
+  },
+  perno: {
+    id: 'perno',
+    label: 'Perno / Poste Intrarradicular',
+    color: '#4f46e5',
+    category: 'tratamiento',
+    bgClass: 'bg-indigo-100',
+    textClass: 'text-indigo-800',
+    description: 'Perno colado o de fibra de vidrio en conducto',
+    symbol: '📌'
   },
   sellador: {
     id: 'sellador',
-    label: 'Sellador de Fosas',
-    color: '#3b82f6',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-700',
-    description: 'Sellador preventivo (Azul)',
-    symbol: '🔵'
+    label: 'Sellador de Fosas y Fisuras',
+    color: '#38bdf8',
+    category: 'tratamiento',
+    bgClass: 'bg-sky-100',
+    textClass: 'text-sky-700',
+    description: 'Protección preventiva en surcos oclusales',
+    symbol: '🛡️'
+  },
+  // 3. REEMPLAZOS / PRÓTESIS / CIRUGÍA
+  implante: {
+    id: 'implante',
+    label: 'Implante Dental',
+    color: '#10b981',
+    category: 'protesis',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-800',
+    description: 'Implante osteointegrado intraóseo',
+    symbol: '🔩'
+  },
+  puente: {
+    id: 'puente',
+    label: 'Puente Fijo',
+    color: '#059669',
+    category: 'protesis',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-900',
+    description: 'Prótesis fija conectando pilares y pónticos',
+    symbol: '🌉'
+  },
+  protesis_removible: {
+    id: 'protesis_removible',
+    label: 'Prótesis Removible (PPR)',
+    color: '#8b5cf6',
+    category: 'protesis',
+    bgClass: 'bg-purple-100',
+    textClass: 'text-purple-800',
+    description: 'Prótesis parcial removible metálica o acrílica',
+    symbol: '🦷'
+  },
+  protesis_total: {
+    id: 'protesis_total',
+    label: 'Prótesis Total / Completa',
+    color: '#7c3aed',
+    category: 'protesis',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-900',
+    description: 'Dentadura completa superior o inferior',
+    symbol: '😁'
   },
   extraccion_indicada: {
     id: 'extraccion_indicada',
-    label: 'Extracción Indicada',
-    color: '#dc2626',
-    bgClass: 'bg-red-100',
-    textClass: 'text-red-700',
-    description: 'Pieza con indicación de exodoncia (2 líneas paralelas horizontales rojas)',
+    label: 'Extracción Indicada (Exodoncia)',
+    color: '#e11d48',
+    category: 'protesis',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-800',
+    description: 'Pieza dental con indicación de exodoncia',
     symbol: '═'
   },
   ausente: {
     id: 'ausente',
     label: 'Diente Ausente',
-    color: '#dc2626',
+    color: '#ef4444',
+    category: 'protesis',
     bgClass: 'bg-red-100',
     textClass: 'text-red-700',
-    description: 'Diente ausente (Cruz Roja ❌)',
+    description: 'Pieza ausente por agenesia o pérdida',
     symbol: '❌'
   },
   extraido: {
     id: 'extraido',
     label: 'Diente Extraído',
-    color: '#2563eb',
+    color: '#1d4ed8',
+    category: 'protesis',
     bgClass: 'bg-blue-100',
-    textClass: 'text-blue-700',
-    description: 'Pieza extraída previamente (Cruz Azul ❌)',
+    textClass: 'text-blue-800',
+    description: 'Pieza extraída previamente por profesional',
     symbol: '❌'
   },
-  puente: {
-    id: 'puente',
-    label: 'Puente Fijo',
-    color: '#2563eb',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-700',
-    description: 'Prótesis fija / Puente (Haz clic en pilar 1 y luego en pilar 2)',
-    symbol: '🌉'
+  erupcion: {
+    id: 'erupcion',
+    label: 'Diente en Erupción',
+    color: '#10b981',
+    category: 'protesis',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-800',
+    description: 'Pieza dental emergiendo en la arcada',
+    symbol: '⬆️'
   }
 };
 
@@ -155,6 +289,32 @@ export const INITIAL_PATIENTS: Patient[] = [
         type: 'periapical',
         imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80',
         notes: 'Conductos mesiales visibles de 19mm. Sin lesión periapical evidente.'
+      }
+    ],
+    evolutions: [
+      {
+        id: 'evo-1',
+        date: '2026-08-20',
+        dentistName: 'Dra. Amalia Merlo',
+        toothNumber: 16,
+        treatment: 'Apertura de cavidad y eliminación de tejido cariado oclusal. Tallado biomecánico.',
+        notes: 'Se coloca restauración provisoria con eugenato. Se indica control en 7 días.'
+      },
+      {
+        id: 'evo-2',
+        date: '2026-07-15',
+        dentistName: 'Dr. Fernando Ruiz',
+        toothNumber: 36,
+        treatment: 'Paso 2 de Endodoncia: Limpieza, instrumentación y conductometría.',
+        notes: 'Longitud de trabajo 21mm. Irrigación activa con NaOCl 2.5%. Paciente asintomático.'
+      },
+      {
+        id: 'evo-3',
+        date: '2026-05-10',
+        dentistName: 'Dra. Amalia Merlo',
+        toothNumber: 24,
+        treatment: 'Obturación con composite fotopolimerizable en cara oclusal.',
+        notes: 'Grabado ácido 15s, adhesivo universal, restauración estética y pulido con discos.'
       }
     ]
   },
