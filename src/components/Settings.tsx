@@ -245,7 +245,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
           <Sparkles className="w-4 h-4 text-teal-600" />
-          <span>Odonto Merlo v1.2</span>
+          <span>Odonto Merlo v1.6</span>
         </div>
       </div>
 

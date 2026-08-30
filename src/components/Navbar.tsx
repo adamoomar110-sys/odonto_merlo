@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <h1 className="font-extrabold text-lg text-slate-900 tracking-tight leading-tight flex items-center gap-2">
                 {clinicName}
                 <span className="text-[10px] font-bold uppercase bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full border border-teal-200">
-                  Clínico v1.0
+                  Clínico v1.6
                 </span>
               </h1>
               <p className="text-xs text-slate-400 font-medium">Gestión Odontológica Profesional</p>
