@@ -112,6 +112,9 @@ export interface Patient {
 
 export type AppointmentStatus = 'pendiente' | 'confirmado' | 'atendido' | 'cancelado';
 
+export type AppointmentOrigin = 'online' | 'consultorio';
+export type AppointmentPaymentStatus = 'pendiente' | 'seña_abonada' | 'total_abonado' | 'efectivo_consultorio';
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -123,6 +126,9 @@ export interface Appointment {
   specialty: string;
   status: AppointmentStatus;
   notes: string;
+  origin?: AppointmentOrigin;
+  paymentStatus?: AppointmentPaymentStatus;
+  dni?: string;
 }
 
 export interface BudgetItem {

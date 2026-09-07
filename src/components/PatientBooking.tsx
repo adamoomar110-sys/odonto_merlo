@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Appointment, ClinicScheduleConfig, DayOfWeek } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Calendar, Clock, User, Phone, CreditCard, ArrowLeft, CheckCircle2, QrCode, Copy, Sparkles, MessageCircle, ShieldCheck, AlertTriangle, CalendarPlus, XCircle, ChevronLeft, ChevronRight, Stethoscope } from 'lucide-react';
+import { Appointment, ClinicScheduleConfig, DayOfWeek, Patient, Dentist } from '../types';
 import { DEFAULT_CLINIC_SCHEDULE, getDayOfWeekKey, generateTimeSlotsFromSchedule } from '../data/mockData';
 
 interface PatientBookingProps {
@@ -8,9 +8,22 @@ interface PatientBookingProps {
   onAddAppointment: (appointment: Appointment) => void;
   onTriggerTicket?: (appointment: Appointment) => void;
   clinicSchedule?: ClinicScheduleConfig;
+  appointments?: Appointment[];
+  patients?: Patient[];
+  onAddPatient?: (patient: Patient) => void;
+  dentists?: Dentist[];
 }
 
-export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, onAddAppointment, onTriggerTicket, clinicSchedule }) => {
+export const PatientBooking: React.FC<PatientBookingProps> = ({
+  onBackToMenu,
+  onAddAppointment,
+  onTriggerTicket,
+  clinicSchedule,
+  appointments,
+  patients,
+  onAddPatient,
+  dentists
+}) => {
   const [step, setStep] = useState<'schedule' | 'details' | 'payment' | 'confirmed'>('schedule');
   
   // Selección de fecha y turno
@@ -21,6 +34,20 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
   const currentDayKey = getDayOfWeekKey(selectedDate);
   const currentDaySchedule = activeSchedule[currentDayKey];
   const isDayOpen = currentDaySchedule?.isOpen ?? true;
+
+  // Odontólogos activos disponibles
+  const activeDentists = useMemo(() => {
+    if (dentists && dentists.length > 0) {
+      const act = dentists.filter(d => d.active);
+      if (act.length > 0) return act;
+    }
+    return [
+      { id: 'den-1', name: 'Dra. Amalia Merlo', licenseNumber: 'MP 45890', specialty: 'Ortodoncia & Operatoria', phone: '+54 9 11 4589-1234', email: 'dra.merlo@odontomerlo.com', active: true },
+      { id: 'den-2', name: 'Dr. Fernando Ruiz', licenseNumber: 'MP 51203', specialty: 'Endodoncia & Cirugía', phone: '+54 9 11 6723-9988', email: 'dr.ruiz@odontomerlo.com', active: true }
+    ];
+  }, [dentists]);
+
+  const [selectedDentistName, setSelectedDentistName] = useState(activeDentists[0]?.name || 'Dra. Amalia Merlo');
 
   // Almanaque visual interactivo state
   const todayObj = useMemo(() => new Date(), []);
@@ -86,12 +113,32 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
     return days;
   }, [viewYear, viewMonth, activeSchedule]);
 
+  // Turnos ya ocupados en la fecha y con ese profesional
+  const bookedSlotsForDateAndDentist = useMemo(() => {
+    if (!appointments) return [];
+    return appointments
+      .filter(a => a.date === selectedDate && a.dentistName === selectedDentistName && a.status !== 'cancelado')
+      .map(a => a.time);
+  }, [appointments, selectedDate, selectedDentistName]);
+
   const availableTimeSlots = useMemo(() => {
     if (!isDayOpen) return [];
     return generateTimeSlotsFromSchedule(activeSchedule, selectedDate);
   }, [activeSchedule, selectedDate, isDayOpen]);
 
-  const [selectedTime, setSelectedTime] = useState(availableTimeSlots[0] || '10:00');
+  const availableNonBookedSlots = useMemo(() => {
+    return availableTimeSlots.filter(slot => !bookedSlotsForDateAndDentist.includes(slot));
+  }, [availableTimeSlots, bookedSlotsForDateAndDentist]);
+
+  const [selectedTime, setSelectedTime] = useState(availableNonBookedSlots[0] || availableTimeSlots[0] || '10:00');
+
+  useEffect(() => {
+    if (bookedSlotsForDateAndDentist.includes(selectedTime) || !availableTimeSlots.includes(selectedTime)) {
+      if (availableNonBookedSlots.length > 0) {
+        setSelectedTime(availableNonBookedSlots[0]);
+      }
+    }
+  }, [selectedDate, selectedDentistName, bookedSlotsForDateAndDentist, availableTimeSlots, availableNonBookedSlots, selectedTime]);
 
   // Datos del paciente
   const [nombre, setNombre] = useState('');
@@ -114,11 +161,6 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
   const currentSpecialtyObj = specialties.find(s => s.name === selectedSpecialty) || specialties[0];
   const amountToPay = paymentOption === 'senia' ? currentSpecialtyObj.senia : currentSpecialtyObj.price;
 
-  const timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
-  ];
-
   const handleCopyAlias = () => {
     navigator.clipboard.writeText('ODONTO.MERLO.MP');
     setCopiedAlias(true);
@@ -133,17 +175,49 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
       const generatedId = 'app-online-' + Date.now();
       setNewAppointmentId(generatedId);
 
+      // Comprobar si el paciente ya existe en la base de datos por DNI o teléfono
+      let targetPatientId = 'pat-' + Date.now();
+      const cleanDni = dni.trim().replace(/\./g, '');
+      const existingPatient = (patients || []).find(p => 
+        (p.dni && p.dni.replace(/\./g, '') === cleanDni) ||
+        (p.phone && p.phone.replace(/[^0-9]/g, '') === telefono.trim().replace(/[^0-9]/g, ''))
+      );
+
+      if (existingPatient) {
+        targetPatientId = existingPatient.id;
+      } else if (onAddPatient) {
+        // Registrar automáticamente nuevo paciente para que aparezca en la ficha del consultorio
+        const newPatient: Patient = {
+          id: targetPatientId,
+          name: nombre.trim(),
+          dni: dni.trim(),
+          age: 30,
+          phone: telefono.trim(),
+          email: '',
+          healthInsurance: 'Particular',
+          insuranceNumber: '',
+          medicalHistory: 'Paciente registrado automáticamente vía reserva online.',
+          allergies: 'Sin alergias registradas',
+          odontogramFindings: [],
+          notes: `Registrado vía online (${selectedSpecialty}). Seña/Pago: Mercado Pago.`
+        };
+        onAddPatient(newPatient);
+      }
+
       const newApp: Appointment = {
         id: generatedId,
-        patientId: 'online-' + Date.now(),
+        patientId: targetPatientId,
         patientName: nombre.trim(),
         patientPhone: telefono.trim(),
-        dentistName: 'Dra. Amalia Merlo',
+        dentistName: selectedDentistName,
         date: selectedDate,
         time: selectedTime,
         specialty: selectedSpecialty,
         status: 'confirmado',
-        notes: `Turno reservado online. Pago acreditado vía Mercado Pago (${paymentOption === 'senia' ? 'Seña abonada: $' + amountToPay : 'Pago total: $' + amountToPay}). DNI: ${dni}`
+        origin: 'online',
+        paymentStatus: paymentOption === 'senia' ? 'seña_abonada' : 'total_abonado',
+        dni: dni.trim(),
+        notes: `Turno reservado online por el paciente. Pago acreditado vía Mercado Pago (${paymentOption === 'senia' ? 'Seña abonada: $' + amountToPay.toLocaleString('es-AR') : 'Pago total: $' + amountToPay.toLocaleString('es-AR')}). DNI: ${dni.trim()}`
       };
 
       onAddAppointment(newApp);
@@ -240,6 +314,35 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
                       <span>Valor: ${spec.price.toLocaleString('es-AR')}</span>
                       <span className="text-sky-400 font-semibold">Seña: ${spec.senia.toLocaleString('es-AR')}</span>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Profesional Odontólogo/a Tratante */}
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider mb-2 flex items-center gap-1.5">
+                <Stethoscope className="w-4 h-4 text-teal-400" />
+                <span>Profesional Odontólogo/a Tratante:</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activeDentists.map(dentist => (
+                  <div
+                    key={dentist.id}
+                    onClick={() => setSelectedDentistName(dentist.name)}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                      selectedDentistName === dentist.name
+                        ? 'border-teal-400 bg-teal-500/15 text-white ring-2 ring-teal-500/30'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-sm text-white">{dentist.name}</div>
+                      <div className="text-xs text-slate-400">{dentist.specialty} — {dentist.licenseNumber}</div>
+                    </div>
+                    {selectedDentistName === dentist.name && (
+                      <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0" />
+                    )}
                   </div>
                 ))}
               </div>
@@ -355,27 +458,54 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
 
             {/* Horarios disponibles */}
             <div className="mb-8">
-              <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider mb-2">
-                Horarios Disponibles para {currentDaySchedule?.label} ({availableTimeSlots.length} turnos):
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold uppercase text-slate-300 tracking-wider">
+                  Horarios para {currentDaySchedule?.label} con {selectedDentistName}:
+                </label>
+                <span className="text-[11px] text-teal-400 font-semibold">
+                  {availableNonBookedSlots.length} de {availableTimeSlots.length} disponibles
+                </span>
+              </div>
 
               {isDayOpen && availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                  {availableTimeSlots.map(time => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => setSelectedTime(time)}
-                      className={`py-2.5 px-3 rounded-xl font-bold text-sm border transition-all ${
-                        selectedTime === time
-                          ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/25'
-                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                      }`}
-                    >
-                      {time} hs
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    {availableTimeSlots.map(time => {
+                      const isBooked = bookedSlotsForDateAndDentist.includes(time);
+                      const isSelected = selectedTime === time;
+
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          disabled={isBooked}
+                          onClick={() => setSelectedTime(time)}
+                          className={`py-2.5 px-3 rounded-xl font-bold text-sm border transition-all flex flex-col items-center justify-center ${
+                            isBooked
+                              ? 'bg-slate-900/60 border-red-900/30 text-red-400/50 cursor-not-allowed opacity-50'
+                              : isSelected
+                              ? 'bg-sky-500 border-sky-400 text-white shadow-lg shadow-sky-500/25 ring-2 ring-sky-300'
+                              : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <span>{time} hs</span>
+                          {isBooked && (
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-red-400 mt-0.5">
+                              Ocupado
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {availableNonBookedSlots.length === 0 && (
+                    <div className="mt-3 bg-red-950/40 border border-red-800/60 rounded-xl p-3 text-xs text-red-300 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>Todos los turnos de este día para <strong>{selectedDentistName}</strong> ya están ocupados. Por favor selecciona otra fecha u otro profesional.</span>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center text-xs text-slate-400 italic">
                   No hay horarios de atención configurados para la fecha seleccionada.
@@ -384,10 +514,10 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onBackToMenu, on
             </div>
 
             <button
-              disabled={!isDayOpen || availableTimeSlots.length === 0}
+              disabled={!isDayOpen || availableNonBookedSlots.length === 0 || bookedSlotsForDateAndDentist.includes(selectedTime)}
               onClick={() => setStep('details')}
               className={`w-full py-4 font-extrabold text-base rounded-2xl transition-all shadow-xl flex items-center justify-center space-x-2 ${
-                isDayOpen && availableTimeSlots.length > 0
+                isDayOpen && availableNonBookedSlots.length > 0 && !bookedSlotsForDateAndDentist.includes(selectedTime)
                   ? 'bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white shadow-sky-500/25 cursor-pointer'
                   : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
               }`}

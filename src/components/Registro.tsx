@@ -224,7 +224,7 @@ export const Registro: React.FC<RegistroProps> = ({ usuarioLogin, onDone }) => {
           fontSize: '11px', color: 'rgba(71,85,105,0.7)',
           letterSpacing: '1px', textTransform: 'uppercase',
         }}>
-          © 2025 Aura · Todos los derechos reservados
+          © 2026 Aura · Todos los derechos reservados
         </p>
       </div>
 

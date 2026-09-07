@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActiveTab, Navbar } from './components/Navbar';
 import { Odontogram } from './components/Odontogram';
 import { Appointments } from './components/Appointments';
@@ -23,10 +23,55 @@ export const App: React.FC = () => {
   const [appPhase, setAppPhase] = useState<AppPhase>('intro');
   const [usuarioActivo, setUsuarioActivo] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTab>('odontogram');
-  const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
-  const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>(INITIAL_PATIENTS[0].id);
+
+  // Estado con persistencia en localStorage
+  const [patients, setPatients] = useState<Patient[]>(() => {
+    const saved = localStorage.getItem('odonto_patients');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return INITIAL_PATIENTS;
+  });
+
+  const [appointments, setAppointments] = useState<Appointment[]>(() => {
+    const saved = localStorage.getItem('odonto_appointments');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return INITIAL_APPOINTMENTS;
+  });
+
+  const [budgets, setBudgets] = useState<Budget[]>(() => {
+    const saved = localStorage.getItem('odonto_budgets');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return INITIAL_BUDGETS;
+  });
+
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(() => {
+    const saved = localStorage.getItem('odonto_patients');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) return parsed[0].id;
+      } catch (e) {}
+    }
+    return INITIAL_PATIENTS[0].id;
+  });
+
+  // Guardado reactivo en localStorage
+  useEffect(() => {
+    localStorage.setItem('odonto_patients', JSON.stringify(patients));
+  }, [patients]);
+
+  useEffect(() => {
+    localStorage.setItem('odonto_appointments', JSON.stringify(appointments));
+  }, [appointments]);
+
+  useEffect(() => {
+    localStorage.setItem('odonto_budgets', JSON.stringify(budgets));
+  }, [budgets]);
 
   // Estado de Colores Personalizados para el Odontograma
   const [conditionColors, setConditionColors] = useState<Record<ConditionType, string>>(() => {
@@ -45,9 +90,27 @@ export const App: React.FC = () => {
   const [latestTicketAppointment, setLatestTicketAppointment] = useState<Appointment | null>(null);
 
   // Estado del consultorio, horarios y staff de odontólogos
-  const [clinicName, setClinicName] = useState<string>('Odonto Merlo');
-  const [clinicAddress, setClinicAddress] = useState<string>('Av. del Libertador 1450, Merlo');
-  const [clinicPhone, setClinicPhone] = useState<string>('+54 9 11 4589-1234');
+  const [clinicName, setClinicName] = useState<string>(() => {
+    return localStorage.getItem('odonto_clinic_name') || 'Odonto Merlo';
+  });
+  const [clinicAddress, setClinicAddress] = useState<string>(() => {
+    return localStorage.getItem('odonto_clinic_address') || 'Av. del Libertador 1450, Merlo';
+  });
+  const [clinicPhone, setClinicPhone] = useState<string>(() => {
+    return localStorage.getItem('odonto_clinic_phone') || '+54 9 11 4589-1234';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('odonto_clinic_name', clinicName);
+  }, [clinicName]);
+
+  useEffect(() => {
+    localStorage.setItem('odonto_clinic_address', clinicAddress);
+  }, [clinicAddress]);
+
+  useEffect(() => {
+    localStorage.setItem('odonto_clinic_phone', clinicPhone);
+  }, [clinicPhone]);
 
   const [clinicSchedule, setClinicSchedule] = useState<ClinicScheduleConfig>(() => {
     const saved = localStorage.getItem('odonto_clinic_schedule');
@@ -62,10 +125,20 @@ export const App: React.FC = () => {
     localStorage.setItem('odonto_clinic_schedule', JSON.stringify(newSchedule));
   };
 
-  const [dentists, setDentists] = useState<Dentist[]>([
-    { id: 'den-1', name: 'Dra. Amalia Merlo', licenseNumber: 'MP 45890', specialty: 'Ortodoncia & Operatoria', phone: '+54 9 11 4589-1234', email: 'dra.merlo@odontomerlo.com', active: true },
-    { id: 'den-2', name: 'Dr. Fernando Ruiz', licenseNumber: 'MP 51203', specialty: 'Endodoncia & Cirugía', phone: '+54 9 11 6723-9988', email: 'dr.ruiz@odontomerlo.com', active: true }
-  ]);
+  const [dentists, setDentists] = useState<Dentist[]>(() => {
+    const saved = localStorage.getItem('odonto_dentists');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { id: 'den-1', name: 'Dra. Amalia Merlo', licenseNumber: 'MP 45890', specialty: 'Ortodoncia & Operatoria', phone: '+54 9 11 4589-1234', email: 'dra.merlo@odontomerlo.com', active: true },
+      { id: 'den-2', name: 'Dr. Fernando Ruiz', licenseNumber: 'MP 51203', specialty: 'Endodoncia & Cirugía', phone: '+54 9 11 6723-9988', email: 'dr.ruiz@odontomerlo.com', active: true }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('odonto_dentists', JSON.stringify(dentists));
+  }, [dentists]);
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || patients[0];
 
@@ -213,6 +286,10 @@ export const App: React.FC = () => {
           onAddAppointment={handleAddAppointment}
           onTriggerTicket={(app) => setLatestTicketAppointment(app)}
           clinicSchedule={clinicSchedule}
+          appointments={appointments}
+          patients={patients}
+          onAddPatient={handleAddPatient}
+          dentists={dentists}
         />
         <NewAppointmentTicket
           appointment={latestTicketAppointment}
@@ -290,6 +367,8 @@ export const App: React.FC = () => {
             onUpdateStatus={handleUpdateAppointmentStatus}
             onTriggerTicket={(app) => setLatestTicketAppointment(app)}
             clinicSchedule={clinicSchedule}
+            dentists={dentists}
+            onAddPatient={handleAddPatient}
           />
         )}
 
