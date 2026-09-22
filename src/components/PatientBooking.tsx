@@ -776,7 +776,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({
 
             <div className="flex flex-col gap-3 max-w-md mx-auto">
               <a
-                href={`https://wa.me/5491123456789?text=Hola%20OdontoMerlo,%20acabo%20de%20reservar%20mi%20turno%20para%20el%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
+                href={`https://wa.me/5491178295317?text=Hola%20OdontoMerlo,%20acabo%20de%20reservar%20mi%20turno%20para%20el%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
@@ -797,7 +797,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({
                 </a>
 
                 <a
-                  href={`https://wa.me/5491123456789?text=Hola%20OdontoMerlo,%20te%20escribo%20por%20un%20imprevisto%20con%20mi%20turno%20del%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
+                  href={`https://wa.me/5491178295317?text=Hola%20OdontoMerlo,%20te%20escribo%20por%20un%20imprevisto%20con%20mi%20turno%20del%20${selectedDate}%20a%20las%20${selectedTime}%20hs.%20Nombre:%20${encodeURIComponent(nombre)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-700"
