@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
 
           <div className="flex items-center gap-1.5 px-3 py-1 bg-teal-50 text-teal-800 font-bold rounded-full border border-teal-200 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-            <span>© 2026 AURA Startup. Todos los derechos reservados.</span>
+            <span>© 2026 Aura. Todos los derechos reservados. Startup Aura por Omar Horacio Adamo.</span>
           </div>
         </div>
 
